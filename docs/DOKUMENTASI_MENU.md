@@ -52,19 +52,19 @@ graph TD
     end
 
     %% Hubungan dan Aliran Kerja
-    UI -->|AJAX Polling & Aksi Manual| API
+    UI -->|AJAX Polling dan Aksi Manual| API
     J -->|Pembaruan Visual Seketika| MEM
-    J -->|Penyimpanan Persisten (python-dotenv)| ENV
+    J -->|Simpan Permanen| ENV
     MEM <--> API
     API <--> OS
     
-    WD -->|Pemantauan Otonom Setiap 15 Detik| OS
-    WD -->|Sinyal Siaga Kritis & Tampering| Notif
+    WD -->|Pantau Otonom 15 Detik| OS
+    WD -->|Sinyal Siaga dan Tampering| Notif
     Notif --> TG
     Notif --> DC
     
-    OS -->|Penulisan Bukti Audit| Storage
-    API -->|Pembacaan Jejak Forensik| Storage
+    OS -->|Tulis Bukti Audit| Storage
+    API -->|Baca Jejak Forensik| Storage
 ```
 
 ---
