@@ -105,6 +105,12 @@ Jika berkas `.env` belum dikonfigurasi, gunakan kredensial masuk (*login*) stand
 
 ---
 
+## 📖 Dokumentasi Operasional Lengkap
+Untuk mempelajari lebih mendalam mengenai fungsi spesifik, skenario penggunaan praktis, serta mekanisme kerja internal dari seluruh **10 menu dasbor** (mulai dari *Overview*, *Services Monitor*, hingga *Dual Broadcaster* di menu *Pengaturan*), silakan baca dokumen khusus:
+👉 **[docs/DOKUMENTASI_MENU.md](docs/DOKUMENTASI_MENU.md)**
+
+---
+
 ## 🛡️ Keamanan & Peringatan Penggunaan
 > **Catatan Administrator**: Fitur **Kill Process**, **Putuskan Akses Remote**, **Kendali Docker**, dan **Terminal Console** memerlukan hak akses *root/administrator* pada sistem operasi host agar sanggup mengeksekusi sinyal tingkat kernel secara nyata.
 
