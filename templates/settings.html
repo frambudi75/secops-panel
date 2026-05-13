@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Pengaturan Sistem - SecOps Dashboard{% endblock %}
+{% block page_title %}Pengaturan & Kredensial Sistem{% endblock %}
+{% block page_subtitle %}Antarmuka kendali visual penuh untuk memperbarui kredensial dasbor dan saluran penyiar notifikasi ganda (Dual Broadcaster){% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 32px;
+    }
+    @media (max-width: 992px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .settings-section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent-primary);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 12px;
+    }
+    .form-group {
+        margin-bottom: 24px;
+    }
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+    .form-group .helper-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        line-height: 1.4;
+    }
+    .form-control {
+        width: 100%;
+        padding: 14px 18px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-main);
+        font-family: inherit;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 16px rgba(0, 242, 254, 0.15);
+        background: rgba(0, 0, 0, 0.6);
+    }
+    .status-banner {
+        padding: 16px 20px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: fadeIn 0.4s ease-out;
+    }
+    .status-banner.success {
+        background: var(--status-optimal-bg);
+        color: var(--status-optimal);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-banner.error {
+        background: var(--status-danger-bg);
+        color: var(--status-danger);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-save-container {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+    .premium-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        background: linear-gradient(135deg, #ff007f, #7928ca);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-left: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if success_msg %}
+<div class="status-banner success">
+    <i class="fa-solid fa-circle-check" style="font-size: 20px;"></i>
+    <div>
+        <strong>Pembaruan Sukses:</strong> {{ success_msg }}
+    </div>
+</div>
+{% endif %}
+
+{% if error_msg %}
+<div class="status-banner error">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px;"></i>
+    <div>
+        <strong>Gagal Memperbarui:</strong> {{ error_msg }}
+    </div>
+</div>
+{% endif %}
+
+<form method="POST" action="/settings">
+    <div class="settings-grid">
+        <!-- Kolom Kiri: Kredensial Autentikasi Dasbor -->
+        <div class="glass-card">
+            <div class="settings-section-title">
+                <i class="fa-solid fa-user-shield"></i> Otentikasi SecOps Panel
+            </div>
+            
+            <div class="form-group">
+                <label for="username">Username Dasbor</label>
+                <input type="text" id="username" name="username" class="form-control" value="{{ config.username or '' }}" placeholder="admin" required autocomplete="off">
+                <div class="helper-text">Digunakan untuk login ke panel antarmuka visual berbasis web.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password Dasbor</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="•••••••• (Kosongkan jika tidak ingin mengubah)">
+                <div class="helper-text">Kata sandi akses. Disarankan menggunakan kombinasi alfanumerik yang kuat.</div>
+            </div>
+            
+            <div style="margin-top: 32px; padding: 16px; background: rgba(0, 242, 254, 0.05); border: 1px solid var(--border-glow); border-radius: 12px;">
+                <h4 style="font-size: 13px; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle-info"></i> Efek Seketika Tanpa Restart
+                </h4>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+                    Setiap perubahan pada formulir ini akan langsung diterapkan secara <em>real-time</em> ke dalam memori aplikasi sekaligus disimpan permanen ke dalam berkas <code>.env</code> lokal.
+                </p>
+            </div>
+        </div>
+
+        <!-- Kolom Kanan: Pengaturan Penyiar Notifikasi Ganda (Dual Broadcaster) -->
+        <div class="glass-card">
+            <div class="settings-section-title">
+                <i class="fa-solid fa-satellite-dish"></i> Saluran Penyiar Notifikasi <span class="premium-badge">Dual</span>
+            </div>
+
+            <div class="form-group">
+                <label for="telegram_token">Telegram Bot Token</label>
+                <input type="text" id="telegram_token" name="telegram_token" class="form-control" value="{{ config.telegram_token or '' }}" placeholder="e.g. 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                <div class="helper-text">Dapatkan dari <a href="https://t.me/BotFather" target="_blank" style="color: var(--accent-primary);">@BotFather</a> untuk mengirim siaga dari Watchdog dan FIM.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="telegram_chat_id">Telegram Chat ID</label>
+                <input type="text" id="telegram_chat_id" name="telegram_chat_id" class="form-control" value="{{ config.telegram_chat_id or '' }}" placeholder="e.g. -1001234567890">
+                <div class="helper-text">ID grup, saluran, atau pengguna pribadi yang menjadi tujuan siaran peringatan.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="discord_webhook">Discord Webhook URL <span class="premium-badge" style="background: #5865F2;">Embed Premium</span></label>
+                <input type="url" id="discord_webhook" name="discord_webhook" class="form-control" value="{{ config.discord_webhook or '' }}" placeholder="https://discord.com/api/webhooks/...">
+                <div class="helper-text">Peringatan dari Watchdog utilisasi tinggi & modifikasi FIM akan dikirimkan dengan format pesan embed berwarna elegan.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card btn-save-container" style="justify-content: space-between; align-items: center;">
+        <span style="font-size: 13px; color: var(--text-muted);">
+            <i class="fa-solid fa-gear fa-spin" style="color: var(--accent-primary);"></i> Sistem siap memperbarui file sumber secara otomatis.
+        </span>
+        <button type="submit" class="btn-primary" style="padding: 14px 32px; font-size: 15px;">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Konfigurasi Permanen
+        </button>
+    </div>
+</form>
+{% endblock %}

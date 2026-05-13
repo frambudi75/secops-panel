@@ -116,6 +116,61 @@ def logs_page():
     if not session.get("logged_in"): return redirect("/")
     return render_template("logs.html", laporan_list=dapatkan_daftar_laporan())
 
+@app.route("/settings", methods=["GET", "POST"])
+def settings_page():
+    if not session.get("logged_in"): return redirect("/")
+    
+    success_msg = None
+    error_msg = None
+    global USER, PASS, TOKEN, CHAT_ID
+    
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        telegram_token = request.form.get("telegram_token", "").strip()
+        telegram_chat_id = request.form.get("telegram_chat_id", "").strip()
+        discord_webhook = request.form.get("discord_webhook", "").strip()
+        
+        # Update memori aplikasi secara live
+        if username: USER = username
+        if password: PASS = password
+        if telegram_token: TOKEN = telegram_token
+        if telegram_chat_id: CHAT_ID = telegram_chat_id
+        
+        # Update os.environ agar fungsi-fungsi lain dan notifier.py seketika mengadopsi
+        if username: os.environ["PANEL_USER"] = username
+        if password: os.environ["PANEL_PASS"] = password
+        if telegram_token: os.environ["TELEGRAM_TOKEN"] = telegram_token
+        if telegram_chat_id: os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
+        os.environ["DISCORD_WEBHOOK"] = discord_webhook
+        
+        # Tulis secara persisten ke dalam berkas .env lokal
+        try:
+            import dotenv
+            env_path = os.path.join(os.getcwd(), ".env")
+            if not os.path.exists(env_path):
+                with open(env_path, "w") as f:
+                    f.write("# Konfigurasi SecOps Panel\n")
+            if username: dotenv.set_key(env_path, "PANEL_USER", username)
+            if password: dotenv.set_key(env_path, "PANEL_PASS", password)
+            if telegram_token: dotenv.set_key(env_path, "TELEGRAM_TOKEN", telegram_token)
+            if telegram_chat_id: dotenv.set_key(env_path, "TELEGRAM_CHAT_ID", telegram_chat_id)
+            dotenv.set_key(env_path, "DISCORD_WEBHOOK", discord_webhook)
+            
+            success_msg = "Kredensial dan API Key berhasil diperbarui! Efek langsung aktif tanpa restart server."
+            tulis_log_internal("[PENGATURAN] Kredensial dan saluran notifikasi ganda diperbarui secara visual.")
+        except Exception as e:
+            error_msg = f"Gagal menulis ke berkas .env: {str(e)}"
+            tulis_log_internal(f"[ERROR] Kegagalan pembaruan file .env: {str(e)}")
+
+    cfg = {
+        "username": USER,
+        "telegram_token": os.getenv("TELEGRAM_TOKEN", ""),
+        "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID", ""),
+        "discord_webhook": os.getenv("DISCORD_WEBHOOK", "")
+    }
+    return render_template("settings.html", config=cfg, success_msg=success_msg, error_msg=error_msg)
+
 @app.route("/scan", methods=["POST"])
 def scan():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
@@ -317,9 +372,8 @@ def resource_and_hids_watchdog():
             if high_cpu_counter >= 3:
                 pesan_darurat = f"⚠️ [WATCHDOG ALERT] Beban utilisasi CPU konstan di level Kritis: {cpu}%! Kapasitas memori: {ram}%."
                 tulis_log_internal(pesan_darurat)
-                if TOKEN and CHAT_ID:
-                    from notifier import kirim_notifikasi_telegram
-                    kirim_notifikasi_telegram(pesan_darurat)
+                from notifier import kirim_notifikasi_telegram
+                kirim_notifikasi_telegram(pesan_darurat)
                 high_cpu_counter = 0
                 
             fim_list = get_fim_status()
@@ -328,9 +382,8 @@ def resource_and_hids_watchdog():
                 if item["status"] == "MODIFIED" and fn not in reported_mods:
                     pesan_fim = f"🚨 [HIDS INTRUSION ALERT] Berkas sistem krusial terdeteksi mengalami PERUBAHAN TANPA IZIN: {fn}! Jejak hash fisik tidak cocok dengan acuan baseline."
                     tulis_log_internal(pesan_fim)
-                    if TOKEN and CHAT_ID:
-                        from notifier import kirim_notifikasi_telegram
-                        kirim_notifikasi_telegram(pesan_fim)
+                    from notifier import kirim_notifikasi_telegram
+                    kirim_notifikasi_telegram(pesan_fim)
                     reported_mods.add(fn)
                 elif item["status"] == "SECURE" and fn in reported_mods:
                     reported_mods.remove(fn)
