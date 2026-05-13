@@ -11,7 +11,8 @@ MONITORED_FILES = [
     "services.py",
     "network.py",
     "terminal.py",
-    "ai_advisor.py"
+    "ai_advisor.py",
+    "access_auditor.py"
 ]
 
 # Memori penyimpan jejak hash awal (baseline)

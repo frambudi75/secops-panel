@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Remote Access Auditor - SecOps Dashboard{% endblock %}
+{% block page_title %}Remote Access & Session Auditor{% endblock %}
+{% block page_subtitle %}Melacak jejak terminal SSH, transfer WinSCP/SFTP, dan RDP jarak jauh secara seketika serta mengaitkan manipulasi berkas fisik{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+
+    <!-- Sesi Kendali Jarak Jauh Aktif -->
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="stat-icon" style="width: 45px; height: 45px; font-size: 18px; background: rgba(0, 242, 254, 0.1); color: var(--accent-primary);">
+                    <i class="fa-solid fa-radar"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 600;">Sesi Remote Interaktif Terkoneksi</h3>
+                    <p style="font-size: 13px; color: var(--text-muted);">Membedah alamat IP asing pada jalur administratif (Port 22 & 3389) dan korelasi perubahan file</p>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="loadAccessData()" style="padding: 8px 16px; font-size: 13px;">
+                <i class="fa-solid fa-rotate"></i> Pindai Ulang Radar
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Protokol / Aplikasi</th>
+                        <th>Host / IP Remote</th>
+                        <th>Status Sesi</th>
+                        <th>Nama Proses Kernel</th>
+                        <th>Berkas Termodifikasi (*Tampering*)</th>
+                        <th>Aksi Keamanan</th>
+                    </tr>
+                </thead>
+                <tbody id="active-sessions-tbody">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menyapu soket kendali jarak jauh...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 14px; font-size: 12px; color: var(--text-muted);">
+            <i class="fa-solid fa-circle-info" style="color: var(--accent-secondary); margin-right: 6px;"></i> 
+            <strong>Korelasi Forensik:</strong> Jika kolom <em>Berkas Termodifikasi</em> mencetak nama file, artinya file tersebut mengalami modifikasi saat sesi remote eksternal ini sedang terkoneksi.
+        </div>
+    </div>
+
+
+    <!-- Riwayat Log Akses Jarak Jauh Persisten -->
+    <div class="glass-card">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+            <div class="stat-icon" style="width: 45px; height: 45px; font-size: 18px; background: rgba(16, 185, 129, 0.1); color: var(--status-optimal); border-color: rgba(16, 185, 129, 0.3);">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 18px; font-weight: 600;">Riwayat Forensik Jejak Akses (*Persistent Log Traces*)</h3>
+                <p style="font-size: 13px; color: var(--text-muted);">Catatan otomatis pendaratan alamat IP pada soket SSH/WinSCP/RDP dari waktu ke waktu</p>
+            </div>
+        </div>
+
+        <div id="historical-logs-container" style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #cbd5e1; max-height: 280px; overflow-y: auto; line-height: 1.6;">
+            <div style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menarik arsip log persisten...</div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadAccessData() {
+        const sessionsTbody = document.getElementById('active-sessions-tbody');
+        const logsBox = document.getElementById('historical-logs-container');
+        
+        try {
+            const res = await fetch('/api/audit/access');
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Render sesi aktif
+                if (data.active_sessions.length === 0) {
+                    sessionsTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak terdeteksi adanya koneksi remote eksternal (SSH/WinSCP/RDP) saat ini.</td></tr>`;
+                } else {
+                    sessionsTbody.innerHTML = data.active_sessions.map(s => {
+                        const isSsh = s.protocol.includes('SSH');
+                        const protoBadge = isSsh ? `background: rgba(0, 242, 254, 0.15); color: var(--accent-primary); border: 1px solid var(--border-glow);` : `background: rgba(245, 158, 11, 0.15); color: var(--status-warning); border: 1px solid rgba(245, 158, 11, 0.3);`;
+                        
+                        const isEst = s.status === 'ESTABLISHED';
+                        const statusPill = isEst ? `<span class="status-pill running">${s.status}</span>` : `<span class="status-pill">${s.status}</span>`;
+                        
+                        // Susun lencana berkas termodifikasi
+                        let modsHtml = `<span style="color: var(--text-muted);">Aman (Tidak ada)</span>`;
+                        if (s.correlated_tampering && s.correlated_tampering.length > 0) {
+                            modsHtml = s.correlated_tampering.map(f => `<span style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger); padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 4px; border: 1px solid rgba(239, 68, 68, 0.4); display: inline-block;">${f}</span>`).join('');
+                        }
+
+                        return `
+                            <tr>
+                                <td><span style="padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; ${protoBadge}">${s.protocol}</span></td>
+                                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${s.remote_ip !== 'N/A' ? 'var(--status-danger)' : 'var(--text-main)'};">${s.remote_ip}:${s.remote_port}</td>
+                                <td>${statusPill}</td>
+                                <td style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${s.process_name} <span style="color: var(--text-muted); font-size: 11px;">(PID: ${s.pid})</span></td>
+                                <td>${modsHtml}</td>
+                                <td>
+                                    ${s.pid !== 'N/A' ? `
+                                        <button onclick="killRemoteSession('${s.pid}', '${s.remote_ip}')" style="background: rgba(239, 68, 68, 0.15); color: var(--status-danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease;">
+                                            <i class="fa-solid fa-user-slash"></i> Putuskan Akses
+                                        </button>
+                                    ` : '<span style="color: var(--text-muted); font-size: 12px;">Internal Listening</span>'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+                
+                // Render arsip log historis
+                if (data.historical_logs.length === 0) {
+                    logsBox.innerHTML = `<div style="text-align: center; color: var(--text-muted);">Berkas arsip log akses jarak jauh masih kosong. Perekaman berjalan otomatis di latar belakang.</div>`;
+                } else {
+                    logsBox.innerHTML = data.historical_logs.map(line => {
+                        const isTampered = line.includes('Tampering Terdeteksi');
+                        const bCol = isTampered ? 'color: var(--status-danger); font-weight: 700;' : '';
+                        return `<div style="padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); ${bCol}"><i class="fa-solid fa-angle-right" style="color: var(--accent-secondary); margin-right: 8px; font-size: 10px;"></i>${line}</div>`;
+                    }).join('');
+                }
+            }
+        } catch (err) {
+            sessionsTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--status-danger);">Gagal membaca soket kendali jarak jauh.</td></tr>`;
+        }
+    }
+
+    async function killRemoteSession(pid, ip) {
+        if (!confirm(`Tindakan ini akan menghentikan paksa koneksi eksternal dari Host ${ip}. Lanjutkan?`)) return;
+        
+        try {
+            const res = await fetch('/api/audit/access/kill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pid })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert(`Sesi koneksi ke Host ${ip} berhasil DIPUTUSKAN!`);
+                loadAccessData();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            alert('Gagal mengeksekusi sinyal pemutusan koneksi.');
+        }
+    }
+
+    // Jalankan siklus awal
+    window.addEventListener('DOMContentLoaded', () => {
+        loadAccessData();
+        setInterval(loadAccessData, 10000);
+    });
+</script>
+{% endblock %}

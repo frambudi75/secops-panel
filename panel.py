@@ -8,6 +8,7 @@ from fim import get_fim_status, authorize_file_update
 from auditor import assess_system_vulnerabilities
 from terminal import execute_system_command
 from ai_advisor import generate_ai_threat_analysis
+from access_auditor import detect_remote_sessions, get_historical_access_logs, terminate_remote_session
 import os
 import time
 from datetime import datetime, timedelta
@@ -29,7 +30,7 @@ PERMANENT_BANS = {}
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("reports", exist_ok=True)
-tulis_log_internal("[SISTEM] Subsistem AI Security Advisor Berjalan Penuh.")
+tulis_log_internal("[SISTEM] Subsistem Remote Access Auditor Berjalan Penuh.")
 
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -99,6 +100,11 @@ def security_page():
 def ai_advisor_page():
     if not session.get("logged_in"): return redirect("/")
     return render_template("ai_advisor.html")
+
+@app.route("/access-auditor")
+def access_auditor_page():
+    if not session.get("logged_in"): return redirect("/")
+    return render_template("access_auditor.html")
 
 @app.route("/console")
 def console_page():
@@ -226,7 +232,7 @@ def api_firewall_unban():
         return jsonify({"status": "success", "message": f"Blokir IP {ip} berhasil dicabut."})
     return jsonify({"status": "error", "message": f"IP {ip} tidak terdaftar dalam pemblokiran."})
 
-# Endpoints Kerentanan, AI Advisor, Ekspor, & Console Shell
+# Endpoints Kerentanan, AI Advisor, Access Auditor, Ekspor, & Console Shell
 @app.route("/api/auditor/assessment")
 def api_auditor_assessment():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
@@ -238,6 +244,23 @@ def api_ai_analyze():
     tulis_log_internal("[AI-ADVISOR] Menerbitkan laporan cerdas prediktif ancaman masa depan.")
     return jsonify(generate_ai_threat_analysis())
 
+@app.route("/api/audit/access")
+def api_audit_access():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({
+        "active_sessions": detect_remote_sessions(),
+        "historical_logs": get_historical_access_logs()
+    })
+
+@app.route("/api/audit/access/kill", methods=["POST"])
+def api_audit_access_kill():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json() or {}
+    pid = data.get("pid")
+    if not pid: return jsonify({"status": "error", "message": "PID sesi tidak disuplai."}), 400
+    tulis_log_internal(f"[ACCESS-AUDITOR] Menghentikan paksa sesi remote pada PID {pid}.")
+    return jsonify(terminate_remote_session(pid))
+
 @app.route("/api/report/export")
 def api_report_export():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
@@ -247,6 +270,7 @@ def api_report_export():
         "system_metrics": get_system_metrics(),
         "vulnerability_assessment": assess_system_vulnerabilities(),
         "ai_threat_intelligence": generate_ai_threat_analysis(),
+        "remote_access_audit": detect_remote_sessions(),
         "file_integrity_monitoring": get_fim_status(),
         "docker_ecosystem": get_docker_containers(),
         "network_bandwidth": get_network_traffic(),
@@ -311,6 +335,8 @@ def resource_and_hids_watchdog():
                 elif item["status"] == "SECURE" and fn in reported_mods:
                     reported_mods.remove(fn)
                     
+            # Pemicu pengawasan sesi remote latar belakang
+            detect_remote_sessions()
         except Exception:
             pass
         time.sleep(60)
