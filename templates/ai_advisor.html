@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}AI Threat Advisor - SecOps Dashboard{% endblock %}
+{% block page_title %}Predictive AI Threat Advisor{% endblock %}
+{% block page_subtitle %}Konsultan kecerdasan siber otonom untuk memprediksi probabilitas eksploitasi dan mensimulasikan vektor serangan masa depan{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Desain orb inti AI */
+    .ai-orb-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px;
+        position: relative;
+    }
+    .ai-core-ring {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, var(--accent-primary), var(--accent-secondary), var(--status-optimal), var(--accent-primary));
+        animation: rotateCore 6s linear infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 35px rgba(0, 242, 254, 0.4);
+    }
+    .ai-inner-orb {
+        width: 124px;
+        height: 124px;
+        border-radius: 50%;
+        background: var(--bg-card);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        text-align: center;
+    }
+    @keyframes rotateCore {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Teks mesin tik / wawasan */
+    .insight-card {
+        background: rgba(0, 0, 0, 0.25);
+        border-left: 3px solid var(--accent-primary);
+        padding: 14px 18px;
+        border-radius: 0 12px 12px 0;
+        margin-bottom: 12px;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: #e2e8f0;
+    }
+    
+    .threat-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 18px;
+        transition: all 0.3s ease;
+    }
+    .threat-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(0, 242, 254, 0.3);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+    
+    <!-- Panel Inti AI & Pemicu -->
+    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 16px; font-weight: 600;"><i class="fa-solid fa-microchip-ai" style="color: var(--accent-primary); margin-right: 8px;"></i> AI Intelligence Orb</h3>
+                <span id="ai-status-badge" class="status-pill running">OPTIMAL POSTURE</span>
+            </div>
+            
+            <div class="ai-orb-container">
+                <div class="ai-core-ring">
+                    <div class="ai-inner-orb">
+                        <i class="fa-solid fa-brain" style="font-size: 32px; color: var(--accent-primary); margin-bottom: 6px; filter: drop-shadow(0 0 8px rgba(0,242,254,0.6));"></i>
+                        <span style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted);">CONFIDENCE</span>
+                        <span id="ai-confidence" style="font-size: 18px; font-weight: 800; color: #fff;">--%</span>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 20px; text-align: center;">Mengotomatisasi analisis prediktif berbasis korelasi HIDS, port, dan utilisasi komputasi host.</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <button id="btn-ai-scan" class="btn-primary" onclick="triggerAiAnalysis()" style="width: 100%; justify-content: center; padding: 12px;">
+                <i class="fa-solid fa-satellite-dish"></i> Jalankan Analisis AI Deep-Scan
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Panel Wawasan & Diagnosis Pakar -->
+    <div class="glass-card" style="display: flex; flex-direction: column;">
+        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">
+            <i class="fa-solid fa-comment-dots" style="color: var(--accent-secondary); margin-right: 8px;"></i> Diagnosis Heuristik (*Natural Language Insights*)
+        </h3>
+        
+        <div id="insights-container" style="flex-grow: 1; overflow-y: auto; max-height: 380px; padding-right: 6px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                <i class="fa-solid fa-robot" style="font-size: 28px; margin-bottom: 12px; opacity: 0.5;"></i><br>
+                Menunggu pengaktifan modul AI Security Advisor...
+            </div>
+        </div>
+        
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 16px; text-align: right; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+            Siklus Pemeriksaan Otomatis: Aktif (Tiap 30 Detik)
+        </div>
+    </div>
+
+</div>
+
+<!-- Skenario Ancaman Prediktif Masa Depan -->
+<div class="glass-card" style="margin-top: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="stat-icon" style="width: 40px; height: 40px; font-size: 16px; background: rgba(245, 158, 11, 0.1); color: var(--status-warning); border-color: rgba(245, 158, 11, 0.2);">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600;">Skenario Eksploitasi Masa Depan (*Predictive Attack Scenarios*)</h3>
+                <p style="font-size: 13px; color: var(--text-muted);">Kemungkinan vektor serangan spesifik yang dihitung dari celah konfigurasi fisik saat ini</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="threats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+        <div style="text-align: center; color: var(--text-muted); padding: 20px 0; grid-column: 1 / -1;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Menghitung matriks kemungkinan eksploitasi...
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function triggerAiAnalysis() {
+        const btn = document.getElementById('btn-ai-scan');
+        const confVal = document.getElementById('ai-confidence');
+        const badge = document.getElementById('ai-status-badge');
+        const insBox = document.getElementById('insights-container');
+        const threatsGrid = document.getElementById('threats-grid');
+        
+        // Atur status proses
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mesin AI Sedang Mendiagnosis...`;
+        
+        try {
+            const res = await fetch('/api/ai/analyze');
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Render orb status
+                confVal.textContent = data.confidence_score;
+                badge.textContent = data.overall_status;
+                
+                if (data.overall_status.includes('CRITICAL')) {
+                    badge.className = 'status-pill stopped';
+                    badge.style.animation = 'pulseIndicator 1.5s infinite';
+                } else if (data.overall_status.includes('ELEVATED')) {
+                    badge.className = 'status-pill';
+                    badge.style.cssText = 'background: rgba(245, 158, 11, 0.15); color: var(--status-warning); border: 1px solid rgba(245, 158, 11, 0.3);';
+                } else {
+                    badge.className = 'status-pill running';
+                }
+                
+                // Render diagnosis bahasa alami
+                insBox.innerHTML = data.insights.map(txt => {
+                    const isWarn = txt.includes('PERINGATAN') || txt.includes('Kritis');
+                    const bCol = isWarn ? 'border-left-color: var(--status-danger);' : '';
+                    return `<div class="insight-card" style="${bCol}">${txt}</div>`;
+                }).join('');
+                
+                // Render skenario ancaman prediktif
+                threatsGrid.innerHTML = data.predictive_threats.map(t => {
+                    const isCrit = t.impact === 'CRITICAL';
+                    const badgeCol = isCrit ? 'background: rgba(239, 68, 68, 0.15); color: var(--status-danger);' : (t.impact === 'HIGH' ? 'background: rgba(245, 158, 11, 0.15); color: var(--status-warning);' : 'background: rgba(0, 242, 254, 0.1); color: var(--accent-primary);');
+                    
+                    return `
+                        <div class="threat-card">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                <div>
+                                    <h4 style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">${t.threat}</h4>
+                                    <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-crosshairs" style="color: var(--accent-secondary); margin-right: 4px;"></i> Pemicu: ${t.trigger}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; ${badgeCol} display: inline-block; margin-bottom: 4px;">${t.impact}</span><br>
+                                    <span style="font-size: 12px; font-weight: 700; color: var(--accent-primary);">${t.probability} Probabilitas</span>
+                                </div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.05); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.1); font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                                <strong style="color: var(--status-optimal);"><i class="fa-solid fa-shield-halved" style="margin-right: 4px;"></i> Solusi Proaktif:</strong> ${t.mitigation}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            insBox.innerHTML = `<div style="color: var(--status-danger); text-align: center; padding: 20px 0;">Gagal menarik sintesis kecerdasan buatan.</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Jalankan Analisis AI Deep-Scan`;
+        }
+    }
+
+    // Eksekusi otomatis pasca pemuatan
+    window.addEventListener('DOMContentLoaded', () => {
+        triggerAiAnalysis();
+        setInterval(triggerAiAnalysis, 30000);
+    });
+</script>
+{% endblock %}

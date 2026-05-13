@@ -7,6 +7,7 @@ from network import get_network_connections, get_network_traffic
 from fim import get_fim_status, authorize_file_update
 from auditor import assess_system_vulnerabilities
 from terminal import execute_system_command
+from ai_advisor import generate_ai_threat_analysis
 import os
 import time
 from datetime import datetime, timedelta
@@ -28,7 +29,7 @@ PERMANENT_BANS = {}
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("reports", exist_ok=True)
-tulis_log_internal("[SISTEM] Subsistem Eksekusi Shell Console Berjalan Penuh.")
+tulis_log_internal("[SISTEM] Subsistem AI Security Advisor Berjalan Penuh.")
 
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -93,6 +94,11 @@ def network_page():
 def security_page():
     if not session.get("logged_in"): return redirect("/")
     return render_template("security.html")
+
+@app.route("/ai-advisor")
+def ai_advisor_page():
+    if not session.get("logged_in"): return redirect("/")
+    return render_template("ai_advisor.html")
 
 @app.route("/console")
 def console_page():
@@ -220,11 +226,17 @@ def api_firewall_unban():
         return jsonify({"status": "success", "message": f"Blokir IP {ip} berhasil dicabut."})
     return jsonify({"status": "error", "message": f"IP {ip} tidak terdaftar dalam pemblokiran."})
 
-# Endpoints Kerentanan, Ekspor, & Console Shell
+# Endpoints Kerentanan, AI Advisor, Ekspor, & Console Shell
 @app.route("/api/auditor/assessment")
 def api_auditor_assessment():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
     return jsonify(assess_system_vulnerabilities())
+
+@app.route("/api/ai/analyze")
+def api_ai_analyze():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    tulis_log_internal("[AI-ADVISOR] Menerbitkan laporan cerdas prediktif ancaman masa depan.")
+    return jsonify(generate_ai_threat_analysis())
 
 @app.route("/api/report/export")
 def api_report_export():
@@ -234,6 +246,7 @@ def api_report_export():
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "system_metrics": get_system_metrics(),
         "vulnerability_assessment": assess_system_vulnerabilities(),
+        "ai_threat_intelligence": generate_ai_threat_analysis(),
         "file_integrity_monitoring": get_fim_status(),
         "docker_ecosystem": get_docker_containers(),
         "network_bandwidth": get_network_traffic(),
