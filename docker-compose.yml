@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  secops-panel:
+    build: .
+    container_name: enterprise-secops-panel
+    restart: unless-stopped
+    # Mengizinkan pemantauan soket dan port jaringan fisik host
+    network_mode: "host" 
+    # Mengizinkan pembacaan dan penghentian PID proses tingkat kernel host
+    pid: "host"          
+    # Diperlukan untuk akses mendalam ke subsistem psutil host
+    privileged: true     
+    volumes:
+      - .:/app           # Mount kode sumber agar sinkron dengan pengawasan FIM
+      - /var/run/docker.sock:/var/run/docker.sock # Jalur kendali instans kontainer Docker host
+    environment:
+      - PANEL_USER=admin
+      - PANEL_PASS=admin123
+      - SECRET_KEY=kunci_rahasia_sesi_super_aman
+      # Hapus tanda pagar di bawah ini untuk mengaktifkan notifikasi Telegram
+      # - TELEGRAM_TOKEN=token_bot_kamu
+      # - TELEGRAM_CHAT_ID=id_chat_kamu
