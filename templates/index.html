@@ -1,10 +1,227 @@
-<!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
-<body>
-  <h2>Dashboard</h2>
-  <form action="/scan" method="post">
-    <button type="submit">Scan Sekarang</button>
-  </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Overview - SecOps Dashboard{% endblock %}
+{% block page_title %}System Overview{% endblock %}
+{% block page_subtitle %}Pemantauan status sumber daya dan pemicu pemindaian keamanan terpadu{% endblock %}
+
+{% block content %}
+<!-- Executive Risk Dashboard Section -->
+<div class="glass-card" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="stat-icon" style="width: 54px; height: 54px; font-size: 22px; background: rgba(0, 242, 254, 0.1); color: var(--accent-primary); border-color: var(--border-glow);">
+            <i class="fa-solid fa-gauge-high"></i>
+        </div>
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="font-size: 20px; font-weight: 700;">System Risk Score: <span id="risk-score-val" style="color: var(--accent-primary);">--</span>/100</h2>
+                <span id="risk-level-badge" class="status-pill">--</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Kalkulasi otomatis berdasarkan parameter utilisasi, FIM, dan paparan port jaringan</p>
+        </div>
+    </div>
+    
+    <div>
+        <a href="/api/report/export" class="btn-primary" style="text-decoration: none; padding: 10px 18px; font-size: 13px;">
+            <i class="fa-solid fa-file-export"></i> Unduh Laporan Forensik (.json)
+        </a>
+    </div>
+</div>
+
+<!-- Grid Kartu Metrik Utama -->
+<div class="dashboard-grid">
+    <div class="glass-card stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-microchip"></i></div>
+        <div class="stat-details">
+            <h3>Utilisasi CPU</h3>
+            <div class="stat-value" id="cpu-val">--%</div>
+        </div>
+    </div>
+
+    <div class="glass-card stat-card">
+        <div class="stat-icon" style="color: #a855f7; border-color: rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.1);"><i class="fa-solid fa-memory"></i></div>
+        <div class="stat-details">
+            <h3>Kapasitas RAM</h3>
+            <div class="stat-value" id="ram-val">--%</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="ram-detail">-- / -- MB</div>
+        </div>
+    </div>
+
+    <div class="glass-card stat-card">
+        <div class="stat-icon" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1);"><i class="fa-solid fa-hard-drive"></i></div>
+        <div class="stat-details">
+            <h3>Penyimpanan Host</h3>
+            <div class="stat-value" id="disk-val">--%</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="disk-detail">Tersedia: -- GB</div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel Kontrol & Status Eksekusi -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+    <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 16px; font-weight: 600;"><i class="fa-solid fa-radar" style="color: var(--accent-primary); margin-right: 8px;"></i> Pemindaian Keamanan Server</h3>
+            <span class="status-pill running">Sistem Siaga</span>
+        </div>
+        
+        <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+            Pemindaian keamanan akan memeriksa berkas mencurigakan berekstensi asing, membersihkan tembolok sampah berumur tua di partisi sementara, serta menginspeksi indikasi serangan tebakan sandi (brute-force) pada layanan SSH.
+        </p>
+
+        <button id="btn-trigger-scan" class="btn-primary" onclick="triggerSecurityScan()">
+            <i class="fa-solid fa-shield-virus"></i> Jalankan Pemindaian Sekarang
+        </button>
+        
+        <div id="scan-feedback" style="margin-top: 16px; font-size: 13px; display: none; padding: 12px; border-radius: 10px; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--border-glow);"></div>
+    </div>
+
+    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;"><i class="fa-solid fa-circle-info" style="color: var(--accent-secondary); margin-right: 8px;"></i> Informasi Engine</h3>
+            <ul style="list-style: none; font-size: 13px; color: var(--text-muted); line-height: 2.2;">
+                <li><strong style="color: #fff;">Versi Platform:</strong> v2.5-Enterprise Subsystem</li>
+                <li><strong style="color: #fff;">Status Bot Telegram:</strong> Terintegrasi Normal</li>
+                <li><strong style="color: #fff;">Siklus Refresh Metrik:</strong> Otomatis (Setiap 5 Detik)</li>
+                <li><strong style="color: #fff;">Mode Proteksi:</strong> FIM Kriptografi & Analisis Risiko Aktif</li>
+            </ul>
+        </div>
+        
+        <div style="padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 11px; color: rgba(255,255,255,0.3); text-align: center;">
+            SecOps Framework Live Monitoring Subsystem
+        </div>
+    </div>
+</div>
+
+<!-- Daftar Temuan Kerentanan Otomatis -->
+<div class="glass-card" style="margin-top: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 600;"><i class="fa-solid fa-bug-slash" style="color: var(--status-warning); margin-right: 8px;"></i> Hasil Inspeksi Celah Keamanan (*Vulnerability Findings*)</h3>
+        <button onclick="fetchRiskAudit()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;"><i class="fa-solid fa-rotate"></i> Refresh Audit</button>
+    </div>
+    <div id="vulnerabilities-list">
+        <div style="text-align: center; color: var(--text-muted); padding: 20px 0;"><i class="fa-solid fa-spinner fa-spin"></i> Menilai konfigurasi kerentanan sistem...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pengambil metrik asinkron periodik
+    async function fetchSystemStats() {
+        try {
+            const res = await fetch('/api/stats');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('cpu-val').textContent = `${data.cpu_percent}%`;
+                document.getElementById('ram-val').textContent = `${data.ram_percent}%`;
+                document.getElementById('ram-detail').textContent = `${data.ram_used_mb} / ${data.ram_total_mb} MB`;
+                document.getElementById('disk-val').textContent = `${data.disk_percent}%`;
+                document.getElementById('disk-detail').textContent = `Tersedia: ${data.disk_free_gb} GB`;
+            }
+        } catch (e) {
+            // Abaikan jika ada putus koneksi sejenak
+        }
+    }
+
+    // Pengambil skor risiko dan daftar celah
+    async function fetchRiskAudit() {
+        const listDiv = document.getElementById('vulnerabilities-list');
+        const scoreVal = document.getElementById('risk-score-val');
+        const badge = document.getElementById('risk-level-badge');
+        
+        try {
+            const res = await fetch('/api/auditor/assessment');
+            if (res.ok) {
+                const data = await res.json();
+                scoreVal.textContent = data.risk_score;
+                badge.textContent = data.risk_level;
+                
+                // Tata warna badge
+                if (data.risk_level === 'Optimal') {
+                    badge.className = 'status-pill running';
+                    scoreVal.style.color = 'var(--status-optimal)';
+                } else if (data.risk_level === 'Warning') {
+                    badge.className = 'status-pill';
+                    badge.style.cssText = 'background: rgba(245, 158, 11, 0.15); color: var(--status-warning); border: 1px solid rgba(245, 158, 11, 0.3);';
+                    scoreVal.style.color = 'var(--status-warning)';
+                } else {
+                    badge.className = 'status-pill stopped';
+                    scoreVal.style.color = 'var(--status-danger)';
+                }
+                
+                // Render daftar temuan
+                if (data.findings.length === 0) {
+                    listDiv.innerHTML = `
+                        <div style="padding: 24px; text-align: center; background: rgba(16, 185, 129, 0.05); border-radius: 12px; border: 1px dashed rgba(16, 185, 129, 0.2);">
+                            <i class="fa-solid fa-shield-halved" style="font-size: 28px; color: var(--status-optimal); margin-bottom: 12px;"></i>
+                            <h4 style="font-size: 15px; font-weight: 600; color: var(--status-optimal);">Konfigurasi Host Terlindungi Sempurna</h4>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Tidak terdeteksi celah port usang, manipulasi file, atau kelebihan beban kritis.</p>
+                        </div>
+                    `;
+                } else {
+                    listDiv.innerHTML = data.findings.map(f => {
+                        const isCrit = f.severity === 'CRITICAL';
+                        const borderCol = isCrit ? 'border-left: 4px solid var(--status-danger);' : 'border-left: 4px solid var(--status-warning);';
+                        const badgeCol = isCrit ? 'background: rgba(239, 68, 68, 0.15); color: var(--status-danger);' : 'background: rgba(245, 158, 11, 0.15); color: var(--status-warning);';
+                        
+                        return `
+                            <div style="background: rgba(0, 0, 0, 0.2); padding: 16px 20px; border-radius: 10px; margin-bottom: 12px; ${borderCol}">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <h4 style="font-size: 14px; font-weight: 600;">${f.title}</h4>
+                                    <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; ${badgeCol}">${f.severity}</span>
+                                </div>
+                                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">${f.description}</p>
+                                <div style="font-size: 12px; color: var(--accent-secondary); background: rgba(0, 242, 254, 0.05); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(0, 242, 254, 0.1);">
+                                    <i class="fa-solid fa-wrench" style="margin-right: 6px;"></i> <strong>Mitigasi:</strong> ${f.recommendation}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        } catch (e) {
+            listDiv.innerHTML = `<div style="text-align: center; color: var(--status-danger); padding: 20px 0;">Gagal memuat status penilaian celah keamanan.</div>`;
+        }
+    }
+
+    // Pemicu scan dinamis
+    async function triggerSecurityScan() {
+        const btn = document.getElementById('btn-trigger-scan');
+        const feedback = document.getElementById('scan-feedback');
+        
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memindai Sistem...`;
+        feedback.style.display = 'none';
+        
+        try {
+            const res = await fetch('/scan', { method: 'POST' });
+            const result = await res.json();
+            
+            feedback.style.display = 'block';
+            if (res.ok) {
+                feedback.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${result.message}`;
+                // Refresh audit pasca scan
+                setTimeout(fetchRiskAudit, 1000);
+            } else {
+                feedback.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> ${result.message}`;
+            }
+        } catch (e) {
+            feedback.style.display = 'block';
+            feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Terjadi gangguan koneksi ke server.`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-shield-virus"></i> Jalankan Pemindaian Sekarang`;
+        }
+    }
+
+    // Inisialisasi dan perulangan
+    fetchSystemStats();
+    fetchRiskAudit();
+    setInterval(fetchSystemStats, 5000);
+    setInterval(fetchRiskAudit, 15000);
+</script>
+{% endblock %}

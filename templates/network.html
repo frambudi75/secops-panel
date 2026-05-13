@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Network Security & Bandwidth - SecOps Dashboard{% endblock %}
+{% block page_title %}Network Traffic & Sockets{% endblock %}
+{% block page_subtitle %}Pantau kecepatan bandwidth real-time, volume transfer data, dan komunikasi soket host{% endblock %}
+
+{% block content %}
+<!-- Deretan Widget Speedometer & Volume Lalu Lintas -->
+<div class="dashboard-grid" style="margin-bottom: 32px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+    
+    <!-- Download Speed -->
+    <div class="glass-card stat-card" style="padding: 18px 22px;">
+        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--status-optimal); border-color: rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-circle-arrow-down"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Download Speed</h3>
+            <div class="stat-value" style="color: var(--status-optimal); font-size: 22px;">
+                <span id="down-speed">0.0</span> <span style="font-size: 13px; font-weight: 500;">KB/s</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Speed -->
+    <div class="glass-card stat-card" style="padding: 18px 22px;">
+        <div class="stat-icon" style="background: rgba(0, 242, 254, 0.1); color: var(--accent-primary); border-color: var(--border-glow);">
+            <i class="fa-solid fa-circle-arrow-up"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Upload Speed</h3>
+            <div class="stat-value" style="color: var(--accent-primary); font-size: 22px;">
+                <span id="up-speed">0.0</span> <span style="font-size: 13px; font-weight: 500;">KB/s</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Received -->
+    <div class="glass-card stat-card" style="padding: 18px 22px;">
+        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--status-warning); border-color: rgba(245, 158, 11, 0.3);">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Total Received</h3>
+            <div class="stat-value" style="font-size: 22px;" id="total-recv">
+                0.00 MB
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Sent -->
+    <div class="glass-card stat-card" style="padding: 18px 22px;">
+        <div class="stat-icon" style="background: rgba(165, 180, 252, 0.1); color: #a5b4fc; border-color: rgba(165, 180, 252, 0.3);">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div class="stat-details">
+            <h3>Total Sent</h3>
+            <div class="stat-value" style="font-size: 22px;" id="total-sent">
+                0.00 MB
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Kotak Pencarian dan Kontrol Tabel Soket -->
+<div class="glass-card" style="margin-bottom: 24px; padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;">
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted);"></i>
+        <input type="text" id="net-search" placeholder="Cari IP, Port, atau Nama Proses..." onkeyup="filterNetwork()">
+    </div>
+    
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn-primary" onclick="loadNetwork()" style="padding: 10px 18px;">
+            <i class="fa-solid fa-rotate"></i> Perbarui Soket
+        </button>
+        <span style="font-size: 12px; color: var(--text-muted);">Total Terbuka: <strong id="total-net" style="color: var(--accent-primary);">0</strong></span>
+    </div>
+</div>
+
+<!-- Sockets Stacked Layout -->
+<div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+    
+    <!-- Listening Ports Section -->
+    <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--status-optimal); box-shadow: 0 0 8px var(--status-optimal);"></span>
+            <h3 style="font-size: 16px; font-weight: 600;">Host Listening Ports</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">(Layanan host yang terbuka dan menunggu instruksi/koneksi masuk)</span>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Protokol</th>
+                        <th>Alamat Lokal</th>
+                        <th>Status Soket</th>
+                        <th>PID Host</th>
+                        <th>Kaitan Proses / Layanan</th>
+                    </tr>
+                </thead>
+                <tbody id="listen-tbody">
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan data soket jaringan...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Established Connections Section -->
+    <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--status-warning); box-shadow: 0 0 8px var(--status-warning);"></span>
+            <h3 style="font-size: 16px; font-weight: 600;">Active Connections</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">(Jalur tersambung ke titik tujuan luar/remote address)</span>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Protokol</th>
+                        <th>Alamat Lokal</th>
+                        <th>Alamat Jarak Jauh (Remote)</th>
+                        <th>Status Koneksi</th>
+                        <th>Kaitan Proses</th>
+                    </tr>
+                </thead>
+                <tbody id="established-tbody">
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan data soket jaringan...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allSockets = [];
+
+    // Penolong format ukuran file/transfer
+    function formatBytes(bytes) {
+        if (bytes === 0) return '0.00 MB';
+        const k = 1024;
+        const dm = 2;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        if (i < 2) return parseFloat((bytes / (k*k)).toFixed(dm)) + ' MB';
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    async function loadTrafficStats() {
+        try {
+            const res = await fetch('/api/traffic');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('down-speed').textContent = data.download_speed_kbs.toFixed(1);
+                document.getElementById('up-speed').textContent = data.upload_speed_kbs.toFixed(1);
+                document.getElementById('total-recv').textContent = formatBytes(data.total_bytes_recv);
+                document.getElementById('total-sent').textContent = formatBytes(data.total_bytes_sent);
+            }
+        } catch (e) {
+            // Abaikan jeda koneksi sesaat agar grafik tidak terganggu
+        }
+    }
+
+    async function loadNetwork() {
+        const listenTbody = document.getElementById('listen-tbody');
+        const estTbody = document.getElementById('established-tbody');
+        
+        try {
+            const res = await fetch('/api/network');
+            if (res.ok) {
+                allSockets = await res.json();
+                renderNetworkTables();
+            }
+        } catch (e) {
+            listenTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--status-danger);">Gagal membaca informasi soket sistem host.</td></tr>`;
+            estTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--status-danger);">Gagal membaca informasi soket sistem host.</td></tr>`;
+        }
+    }
+
+    function renderNetworkTables() {
+        const listenTbody = document.getElementById('listen-tbody');
+        const estTbody = document.getElementById('established-tbody');
+        document.getElementById('total-net').textContent = allSockets.length;
+        
+        const listening = allSockets.filter(s => s.status.toUpperCase() === 'LISTEN' || s.status.toUpperCase() === 'NONE' && s.remote_address === 'None');
+        const established = allSockets.filter(s => s.status.toUpperCase() !== 'LISTEN' && (s.remote_address !== 'None' || s.status.toUpperCase() === 'ESTABLISHED'));
+        
+        if (listening.length === 0) {
+            listenTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Tidak terdeteksi port host yang sedang mendengarkan.</td></tr>`;
+        } else {
+            listenTbody.innerHTML = listening.map(s => `
+                <tr class="net-row">
+                    <td style="font-weight: 600; color: var(--accent-secondary);">${s.protocol}</td>
+                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${s.local_address}</td>
+                    <td><span class="status-pill running" style="font-size: 11px;">${s.status || 'LISTEN'}</span></td>
+                    <td style="font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">${s.pid}</td>
+                    <td style="font-weight: 500;">${s.process_name}</td>
+                </tr>
+            `).join('');
+        }
+
+        if (established.length === 0) {
+            estTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Tidak terdeteksi komunikasi tersambung ke tujuan luar.</td></tr>`;
+        } else {
+            estTbody.innerHTML = established.map(s => {
+                const isEst = s.status.toUpperCase() === 'ESTABLISHED';
+                const pillStyle = isEst ? 'background: rgba(16, 185, 129, 0.15); color: var(--status-optimal); border: 1px solid rgba(16, 185, 129, 0.3);' : 'background: rgba(245, 158, 11, 0.15); color: var(--status-warning); border: 1px solid rgba(245, 158, 11, 0.3);';
+                
+                return `
+                    <tr class="net-row">
+                        <td style="font-weight: 600; color: var(--accent-secondary);">${s.protocol}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${s.local_address}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent-primary);">${s.remote_address}</td>
+                        <td><span class="status-pill" style="${pillStyle} font-size: 11px;">${s.status}</span></td>
+                        <td style="font-weight: 500;">${s.process_name}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        filterNetwork();
+    }
+
+    function filterNetwork() {
+        const query = document.getElementById('net-search').value.toLowerCase();
+        const rows = document.querySelectorAll('.net-row');
+        
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(query)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        document.getElementById('total-net').textContent = visibleCount;
+    }
+
+    // Inisialisasi awal
+    loadTrafficStats();
+    loadNetwork();
+    
+    // Polling konstan: Speedometer per 3 detik, Soket per 15 detik
+    setInterval(loadTrafficStats, 3000);
+    setInterval(loadNetwork, 15000);
+</script>
+{% endblock %}

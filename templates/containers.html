@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Docker Ecosystem - SecOps Dashboard{% endblock %}
+{% block page_title %}Docker Ecosystem{% endblock %}
+{% block page_subtitle %}Pemantauan status aktif dan pengendalian siklus kontainer server secara terpadu{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h3 style="font-size: 16px; font-weight: 600;"><i class="fa-brands fa-docker" style="color: #2496ed; margin-right: 8px; font-size: 20px;"></i> Docker Host Status</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Konektivitas langsung ke daemon engine lokal/remote via socket API</p>
+    </div>
+    
+    <button class="btn-primary" onclick="loadContainers()" style="padding: 10px 18px;">
+        <i class="fa-solid fa-rotate"></i> Perbarui Tampilan
+    </button>
+</div>
+
+<div id="action-toast" style="display: none; margin-bottom: 20px; padding: 14px 20px; border-radius: 12px; font-size: 13px; border: 1px solid transparent;"></div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Container ID</th>
+                <th>Nama Instans</th>
+                <th>Image Source</th>
+                <th>Pemetaan Port</th>
+                <th>Status</th>
+                <th style="text-align: right;">Aksi Kendali</th>
+            </tr>
+        </thead>
+        <tbody id="containers-tbody">
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Menghubungi Docker socket host...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadContainers() {
+        const tbody = document.getElementById('containers-tbody');
+        try {
+            const res = await fetch('/api/containers');
+            if (res.ok) {
+                const data = await res.json();
+                renderContainers(data);
+            }
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--status-danger);">Gangguan pembacaan data soket Docker.</td></tr>`;
+        }
+    }
+
+    function renderContainers(data) {
+        const tbody = document.getElementById('containers-tbody');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak ada instans kontainer yang terdeteksi.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = data.map(c => {
+            const isRunning = c.status.toLowerCase().includes('running');
+            const statusClass = isRunning ? 'running' : 'stopped';
+            
+            return `
+                <tr>
+                    <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-primary); font-weight: 600;">${c.id}</td>
+                    <td style="font-weight: 500;">${c.name}</td>
+                    <td style="font-size: 13px; color: var(--text-muted);">${c.image}</td>
+                    <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">${c.ports}</td>
+                    <td>
+                        <span class="status-pill ${statusClass}">
+                            <span class="console-dot ${isRunning ? 'green' : 'yellow'}"></span> ${c.status}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button onclick="triggerContainerAction('${c.id}', 'start')" title="Start Container" style="background: rgba(16, 185, 129, 0.15); color: var(--status-optimal); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fa-solid fa-play" style="font-size: 11px;"></i>
+                            </button>
+                            <button onclick="triggerContainerAction('${c.id}', 'restart')" title="Restart Container" style="background: rgba(0, 242, 254, 0.15); color: var(--accent-primary); border: 1px solid var(--border-glow); padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fa-solid fa-rotate-right" style="font-size: 11px;"></i>
+                            </button>
+                            <button onclick="triggerContainerAction('${c.id}', 'stop')" title="Stop Container" style="background: rgba(239, 68, 68, 0.15); color: var(--status-danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                                <i class="fa-solid fa-stop" style="font-size: 11px;"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async function triggerContainerAction(id, action) {
+        const toast = document.getElementById('action-toast');
+        toast.style.display = 'block';
+        toast.style.borderColor = 'var(--border-glow)';
+        toast.style.background = 'rgba(0, 242, 254, 0.1)';
+        toast.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyampaikan instruksi '${action}' ke kontainer...`;
+        
+        try {
+            const res = await fetch('/api/containers/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, action })
+            });
+            const data = await res.json();
+            
+            if (res.ok && data.status === 'success') {
+                toast.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                toast.style.background = 'rgba(16, 185, 129, 0.1)';
+                toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${data.message}`;
+                setTimeout(loadContainers, 1500);
+            } else {
+                toast.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                toast.style.background = 'rgba(239, 68, 68, 0.1)';
+                toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> ${data.message || 'Gagal mengeksekusi aksi.'}`;
+            }
+        } catch (e) {
+            toast.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            toast.style.background = 'rgba(239, 68, 68, 0.1)';
+            toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Terjadi kendala komunikasi server.`;
+        }
+    }
+
+    // Inisialisasi
+    loadContainers();
+    setInterval(loadContainers, 15000);
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+[SCAN] Tidak ada file mencurigakan.
+[CLEAN] Dihapus 0 file dari /tmp.
+[FIREWALL] IP mencurigakan:
+'grep' is not recognized as an internal or external command,
+operable program or batch file.
+[LOG] Tidak bisa baca /var/log/syslog (Gunakan Web Dashboard untuk mode simulasi)
+
+[SCAN] Tidak ada file mencurigakan.
+[CLEAN] Dihapus 0 file dari /tmp.
+[FIREWALL] IP mencurigakan:
+'grep' is not recognized as an internal or external command,
+operable program or batch file.
+[LOG] Tidak bisa baca /var/log/syslog (Gunakan Web Dashboard untuk mode simulasi)
+
+[SCAN] Tidak ada file mencurigakan.
+[CLEAN] Dihapus 0 file dari /tmp.
+[FIREWALL] IP mencurigakan:
+'grep' is not recognized as an internal or external command,
+operable program or batch file.
+[LOG] Tidak bisa baca /var/log/syslog (Gunakan Web Dashboard untuk mode simulasi)
+
+[SCAN] Tidak ada file mencurigakan.
+[CLEAN] Dihapus 0 file dari /tmp.
+[FIREWALL] IP mencurigakan:
+'grep' is not recognized as an internal or external command,
+operable program or batch file.
+[LOG] Tidak bisa baca /var/log/syslog (Gunakan Web Dashboard untuk mode simulasi)
+

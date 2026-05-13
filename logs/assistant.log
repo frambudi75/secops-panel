@@ -1,0 +1,35 @@
+[2026-05-13 13:50:57] [SISTEM] Panel Web Keamanan & Pemantauan dinyalakan pada port 5025.
+[2026-05-13 13:51:23] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 13:51:34] [SCAN] Pemindaian sistem dipicu secara manual via Web Dashboard.
+[2026-05-13 13:52:21] [SCAN] Pemindaian sistem dipicu secara manual via Web Dashboard.
+[2026-05-13 13:52:26] [AUTH] Sesi pengguna ditutup (Logout).
+[2026-05-13 13:57:43] [SISTEM] SecOps Framework dengan Ekosistem Docker & Watchdog diaktifkan.
+[2026-05-13 13:57:53] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 13:58:26] [DOCKER] Mengirim sinyal aksi 'start' ke kontainer ID c8b1a23e9f.
+[2026-05-13 13:58:32] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID c8b1a23e9f.
+[2026-05-13 13:58:35] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID f4e091d8ca.
+[2026-05-13 13:58:36] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID a1b2c3d4e5.
+[2026-05-13 13:58:36] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID e9d8c7b6a5.
+[2026-05-13 13:58:37] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID a1b2c3d4e5.
+[2026-05-13 13:58:37] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID f4e091d8ca.
+[2026-05-13 13:58:37] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID c8b1a23e9f.
+[2026-05-13 13:58:38] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID a1b2c3d4e5.
+[2026-05-13 13:58:38] [DOCKER] Mengirim sinyal aksi 'stop' ke kontainer ID e9d8c7b6a5.
+[2026-05-13 13:59:09] [ACTION] Perintah penghentian proses (Kill) ditujukan ke PID 19228.
+[2026-05-13 14:00:32] [AUTH] Pengguna keluar sesi (Logout).
+[2026-05-13 14:09:26] [SISTEM] Subsistem Pemantauan Jaringan & Lalu Lintas Berjalan Penuh.
+[2026-05-13 14:09:38] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 14:10:26] [AUTH] Sesi diakhiri.
+[2026-05-13 14:16:10] [SISTEM] Subsistem HIDS & Pemantauan Berjalan Penuh.
+[2026-05-13 14:16:21] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 14:17:16] [SCAN] Pemindaian anomali dipicu manual via antarmuka web.
+[2026-05-13 14:17:44] [SCAN] Pemindaian anomali dipicu manual via antarmuka web.
+[2026-05-13 14:25:49] [SISTEM] Subsistem Penilai Kerentanan & Ekspor Berjalan Penuh.
+[2026-05-13 14:25:58] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 17:13:55] [SISTEM] Subsistem Eksekusi Shell Console Berjalan Penuh.
+[2026-05-13 17:14:06] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 17:14:43] [AUTH] Sesi diakhiri.
+[2026-05-13 17:16:38] [SISTEM] Subsistem Eksekusi Shell Console Berjalan Penuh.
+[2026-05-13 17:16:49] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.
+[2026-05-13 18:16:37] [SISTEM] Subsistem Eksekusi Shell Console Berjalan Penuh.
+[2026-05-13 18:16:48] [AUTH] Autentikasi berhasil dari IP 192.168.5.10.

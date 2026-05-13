@@ -1,12 +1,118 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login Panel</title></head>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autentikasi - SecOps Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .login-header {
+            margin-bottom: 28px;
+        }
+        .login-header .brand-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .login-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(0, 242, 254, 0.15);
+        }
+        .btn-submit {
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 14px;
+        }
+        .error-box {
+            background: var(--status-danger-bg);
+            color: var(--status-danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
 <body>
-  <h2>Login Panel</h2>
-  <form method="post">
-    Username: <input name="username"><br>
-    Password: <input name="password" type="password"><br>
-    <input type="submit" value="Login">
-  </form>
+    <div class="login-wrapper">
+        <div class="glass-card login-card">
+            <div class="login-header">
+                <i class="fa-solid fa-shield-halved brand-icon"></i>
+                <h2>Akses SecOps Panel</h2>
+                <p>Otentikasi aman asisten keamanan server</p>
+            </div>
+
+            {% if error %}
+            <div class="error-box">
+                <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/">
+                <div class="form-group">
+                    <label for="username">Nama Pengguna</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="Masukkan username" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Kata Sandi</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary btn-submit">
+                    <i class="fa-solid fa-right-to-bracket"></i> Masuk Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

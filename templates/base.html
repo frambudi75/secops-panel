@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecOps Dashboard{% endblock %}</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+    </script>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fa-solid fa-shield-halved brand-icon"></i>
+                <span class="brand-title">SecOps Panel</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item {% if request.path == '/dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="/services" class="nav-item {% if request.path == '/services' %}active{% endif %}">
+                    <i class="fa-solid fa-server"></i>
+                    <span>Services Monitor</span>
+                </a>
+                <a href="/containers" class="nav-item {% if request.path == '/containers' %}active{% endif %}">
+                    <i class="fa-solid fa-cubes"></i>
+                    <span>Docker Ecosystem</span>
+                </a>
+                <a href="/network" class="nav-item {% if request.path == '/network' %}active{% endif %}">
+                    <i class="fa-solid fa-network-wired"></i>
+                    <span>Network Security</span>
+                </a>
+                <a href="/security" class="nav-item {% if request.path == '/security' %}active{% endif %}">
+                    <i class="fa-solid fa-fingerprint"></i>
+                    <span>Proactive HIDS</span>
+                </a>
+                <a href="/console" class="nav-item {% if request.path == '/console' %}active{% endif %}">
+                    <i class="fa-solid fa-rectangle-terminal"></i>
+                    <span>Terminal Console</span>
+                </a>
+                <a href="/logs" class="nav-item {% if request.path == '/logs' %}active{% endif %}">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>System Logs</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="/logout" class="btn-logout">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Keluar Sesi</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="page-header">
+                <div class="page-title">
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p>{% block page_subtitle %}Pusat kendali dan pemantauan aktivitas keamanan server{% endblock %}</p>
+                </div>
+                
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="platform-badge">
+                        <span class="platform-indicator"></span>
+                        <span id="platform-text"><i class="fa-solid fa-microchip"></i> Engine Active</span>
+                    </div>
+                    
+                    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Ubah Skema Warna (Dark / Light)">
+                        <i class="fa-solid fa-moon" id="theme-icon"></i>
+                    </button>
+                </div>
+            </header>
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-icon');
+            if (!icon) return;
+            if (document.body.classList.contains('light-mode')) {
+                icon.className = 'fa-solid fa-sun';
+            } else {
+                icon.className = 'fa-solid fa-moon';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateThemeIcon();
+            console.log("SecOps platform running optimally.");
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

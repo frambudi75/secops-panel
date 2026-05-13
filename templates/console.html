@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Web Terminal Console - SecOps Dashboard{% endblock %}
+{% block page_title %}Command Shell Console{% endblock %}
+{% block page_subtitle %}Eksekutor instruksi OS Windows jarak jauh dengan batasan waktu aman (timeout 7 detik){% endblock %}
+
+{% block content %}
+<div class="glass-card" style="padding: 0; overflow: hidden; border-radius: 16px;">
+    <!-- Header Banner Terminal -->
+    <div style="background: rgba(0, 0, 0, 0.4); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); margin-left: 8px;">secops-interactive-terminal-v2.0</span>
+        </div>
+        
+        <button onclick="clearConsole()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;">
+            <i class="fa-solid fa-trash-can"></i> Bersihkan Layar
+        </button>
+    </div>
+
+    <!-- Wadah Output Konsol -->
+    <div id="terminal-screen" style="background: #090d16; padding: 20px; height: 420px; overflow-y: auto; font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.6; color: #e2e8f0;">
+        <div style="color: #10b981; margin-bottom: 12px;">
+            ========================================================================<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;SECOPS WEB TERMINAL SUBSYSTEM - HOST OS ACCESS GRANTED<br>
+            ========================================================================<br>
+            Ketikkan perintah pemeriksaan dasar Windows (seperti: <span style="color: #38bdf8;">ipconfig</span>, <span style="color: #38bdf8;">netstat -ano</span>, atau <span style="color: #38bdf8;">tasklist</span>).<br>
+            Instruksi yang meminta interaksi tiada henti akan diterminasi dalam 7 detik.
+        </div>
+    </div>
+
+    <!-- Wadah Prompt & Input Perintah -->
+    <div style="background: #0f172a; padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; gap: 10px;">
+        <span style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; white-space: nowrap;">secops@windows:~$</span>
+        
+        <input type="text" id="cmd-input" placeholder="Ketik perintah dan tekan Enter..." style="background: transparent; border: none; color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; flex-grow: 1; width: 100%;">
+        
+        <span id="loading-indicator" style="color: #f59e0b; display: none;"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const inputField = document.getElementById('cmd-input');
+    const screenBox = document.getElementById('terminal-screen');
+    const loadingInd = document.getElementById('loading-indicator');
+
+    // Menjaga fokus ke input secara otomatis
+    window.addEventListener('DOMContentLoaded', () => {
+        inputField.focus();
+    });
+    screenBox.addEventListener('click', () => {
+        inputField.focus();
+    });
+
+    // Event listener penekanan Enter
+    inputField.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const cmdStr = inputField.value.trim();
+            if (!cmdStr) return;
+
+            // Cetak perintah masukan ke layar
+            appendOutput(`secops@windows:~$ ${cmdStr}`, 'input');
+            inputField.value = '';
+            inputField.disabled = true;
+            loadingInd.style.display = 'inline-block';
+
+            try {
+                const res = await fetch('/api/console/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmdStr })
+                });
+                
+                const data = await res.json();
+                if (data.status === 'success') {
+                    appendOutput(data.output, 'success');
+                } else {
+                    appendOutput(`[ERROR] ${data.output}`, 'error');
+                }
+            } catch (err) {
+                appendOutput('[CRITICAL ERROR] Gagal menghubungi layanan konsol jarak jauh.', 'error');
+            } finally {
+                inputField.disabled = false;
+                loadingInd.style.display = 'none';
+                inputField.focus();
+            }
+        }
+    });
+
+    function appendOutput(text, type) {
+        const block = document.createElement('div');
+        block.style.marginTop = '8px';
+        block.style.whiteSpace = 'pre-wrap';
+        block.style.wordBreak = 'break-all';
+
+        if (type === 'input') {
+            block.style.color = '#38bdf8';
+            block.style.fontWeight = '700';
+        } else if (type === 'error') {
+            block.style.color = '#ef4444';
+        } else {
+            block.style.color = '#e2e8f0';
+        }
+
+        block.textContent = text;
+        screenBox.appendChild(block);
+        screenBox.scrollTop = screenBox.scrollHeight;
+    }
+
+    function clearConsole() {
+        screenBox.innerHTML = `
+            <div style="color: #10b981; margin-bottom: 12px;">
+                Layar konsol dibersihkan. Memori eksekusi tetap terpantau log sistem.
+            </div>
+        `;
+        inputField.focus();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs - SecOps Dashboard{% endblock %}
+{% block page_title %}Security Console Logs{% endblock %}
+{% block page_subtitle %}Pusat pembacaan log kernel, akses, dan log asisten keamanan secara langsung{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;">
+    <!-- Panel Pilihan Log -->
+    <div class="glass-card" style="padding: 20px;">
+        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 16px;">Kategori Log</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="log-selector active" onclick="selectLogSource('assistant', this)">
+                <i class="fa-solid fa-shield-halved" style="color: var(--accent-primary);"></i> Log Internal Asisten
+            </button>
+            <button class="log-selector" onclick="selectLogSource('syslog', this)">
+                <i class="fa-solid fa-server" style="color: var(--status-optimal);"></i> Log Sistem (Syslog)
+            </button>
+            <button class="log-selector" onclick="selectLogSource('auth', this)">
+                <i class="fa-solid fa-key" style="color: var(--status-warning);"></i> Log Akses (Auth)
+            </button>
+        </div>
+
+        {% if laporan_list %}
+        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-top: 24px; margin-bottom: 16px;">Laporan Pemindaian</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+            {% for lap in laporan_list %}
+            <button class="log-selector" onclick="selectLogSource('report_{{ lap }}', this)" title="{{ lap }}" style="font-size: 12px;">
+                <i class="fa-solid fa-file-shield" style="color: var(--accent-secondary);"></i> {{ lap }}
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Jendela Konsol Pembaca Log -->
+    <div class="console-wrapper">
+        <div class="console-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="console-actions">
+                    <span class="console-dot red"></span>
+                    <span class="console-dot yellow"></span>
+                    <span class="console-dot green"></span>
+                </div>
+                <span id="console-title" style="font-size: 13px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">logs/assistant.log</span>
+            </div>
+            
+            <button class="btn-primary" onclick="refreshCurrentLog()" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">
+                <i class="fa-solid fa-rotate"></i> Muat Ulang
+            </button>
+        </div>
+        
+        <pre class="console-body" id="log-output">Memuat data log dari sistem...</pre>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .log-selector {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .log-selector:hover {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-main);
+    }
+    .log-selector.active {
+        background: rgba(0, 242, 254, 0.1);
+        border-color: var(--border-glow);
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentLogType = 'assistant';
+
+    async function selectLogSource(type, elem) {
+        currentLogType = type;
+        
+        // Perbarui state tombol aktif
+        const selectors = document.querySelectorAll('.log-selector');
+        selectors.forEach(btn => btn.classList.remove('active'));
+        if (elem) elem.classList.add('active');
+        
+        // Perbarui teks header konsol
+        const titleElem = document.getElementById('console-title');
+        if (type === 'assistant') titleElem.textContent = 'logs/assistant.log';
+        else if (type === 'syslog') titleElem.textContent = '/var/log/syslog';
+        else if (type === 'auth') titleElem.textContent = '/var/log/auth.log';
+        else if (type.startsWith('report_')) titleElem.textContent = `reports/${type.replace('report_', '')}`;
+        
+        await refreshCurrentLog();
+    }
+
+    async function refreshCurrentLog() {
+        const output = document.getElementById('log-output');
+        output.style.opacity = '0.5';
+        
+        try {
+            const res = await fetch(`/api/logs?type=${currentLogType}`);
+            if (res.ok) {
+                const data = await res.json();
+                output.textContent = data.content || "[KOSONG] Berkas log tidak memiliki konten.";
+            } else {
+                output.textContent = "[ERROR] Gagal mengambil konten log dari server.";
+            }
+        } catch (e) {
+            output.textContent = "[ERROR] Masalah koneksi ke server.";
+        } finally {
+            output.style.opacity = '1';
+            // Otomatis gulir ke bawah
+            output.scrollTop = output.scrollHeight;
+        }
+    }
+
+    // Muat otomatis saat dimuat
+    refreshCurrentLog();
+    // Muat ulang periodik tiap 10 detik
+    setInterval(refreshCurrentLog, 10000);
+</script>
+{% endblock %}

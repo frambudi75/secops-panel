@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Services Monitor - SecOps Dashboard{% endblock %}
+{% block page_title %}Active Services & Processes{% endblock %}
+{% block page_subtitle %}Pantau, filter, dan kendalikan proses sistem host secara langsung{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 24px; padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;">
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted);"></i>
+        <input type="text" id="search-input" placeholder="Cari nama service atau PID..." onkeyup="filterServices()">
+    </div>
+    
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn-primary" onclick="loadServices()" style="padding: 10px 18px;">
+            <i class="fa-solid fa-rotate"></i> Segarkan Data
+        </button>
+        <span style="font-size: 12px; color: var(--text-muted);">Total: <strong id="total-count" style="color: #fff;">0</strong> dipantau</span>
+    </div>
+</div>
+
+<div id="kill-feedback" style="display: none; margin-bottom: 20px; padding: 14px 20px; border-radius: 12px; font-size: 13px; border: 1px solid transparent;"></div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>PID</th>
+                <th>Nama Service / Proses</th>
+                <th>Status</th>
+                <th>Memori (RSS)</th>
+                <th style="text-align: right;">Aksi Kendali</th>
+            </tr>
+        </thead>
+        <tbody id="services-tbody">
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar service host...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allServices = [];
+
+    async function loadServices() {
+        const tbody = document.getElementById('services-tbody');
+        try {
+            const res = await fetch('/api/services?limit=150');
+            if (res.ok) {
+                allServices = await res.json();
+                renderTable(allServices);
+            }
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--status-danger);">Gagal memuat data service dari server.</td></tr>`;
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('services-tbody');
+        document.getElementById('total-count').textContent = data.length;
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Tidak ada service yang terdeteksi.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = data.map(svc => {
+            const statusClass = svc.status.toLowerCase() === 'running' ? 'running' : 'stopped';
+            return `
+                <tr class="service-row">
+                    <td style="font-family: 'JetBrains Mono', monospace; color: var(--accent-secondary); font-weight: 600;">${svc.pid}</td>
+                    <td style="font-weight: 500;">${svc.name}</td>
+                    <td><span class="status-pill ${statusClass}"><span class="console-dot ${statusClass === 'running' ? 'green' : 'red'}"></span> ${svc.status}</span></td>
+                    <td style="font-family: 'JetBrains Mono', monospace;">${svc.memory_mb} MB</td>
+                    <td style="text-align: right;">
+                        <button onclick="confirmKillProcess(${svc.pid}, '${svc.name}')" title="Hentikan Proses Host" style="background: rgba(239, 68, 68, 0.15); color: var(--status-danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 11px; cursor: pointer; transition: all 0.2s;">
+                            <i class="fa-solid fa-power-off"></i> Hentikan
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        filterServices();
+    }
+
+    function filterServices() {
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const rows = document.querySelectorAll('.service-row');
+        
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(query)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        document.getElementById('total-count').textContent = visibleCount;
+    }
+
+    async function confirmKillProcess(pid, name) {
+        if (!confirm(`PENGINGAT KEAMANAN:\nApakah kamu yakin ingin menghentikan paksa proses '${name}' (PID: ${pid}) di OS host?`)) {
+            return;
+        }
+        
+        const feedback = document.getElementById('kill-feedback');
+        feedback.style.display = 'block';
+        feedback.style.borderColor = 'var(--border-glow)';
+        feedback.style.background = 'rgba(0, 242, 254, 0.1)';
+        feedback.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyampaikan instruksi penghentian PID ${pid}...`;
+        
+        try {
+            const res = await fetch('/api/services/kill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pid })
+            });
+            const data = await res.json();
+            
+            if (res.ok && data.status === 'success') {
+                feedback.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${data.message}`;
+                setTimeout(loadServices, 1200);
+            } else {
+                feedback.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> ${data.message || 'Gagal menghentikan proses.'}`;
+            }
+        } catch (e) {
+            feedback.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Terjadi kendala komunikasi server.`;
+        }
+    }
+
+    // Inisialisasi
+    loadServices();
+    setInterval(loadServices, 15000);
+</script>
+{% endblock %}
