@@ -1,107 +1,99 @@
-# 🛡️ Security Assistant v2.2
+# 🛡️ Enterprise SecOps Panel & DevSecOps Suite
 
-**Security Assistant v2.2** adalah alat bantu keamanan otomatis untuk server Ubuntu/Debian, dilengkapi dengan web panel dan dukungan Telegram. Sistem ini dapat memindai file mencurigakan, membersihkan folder sementara, mendeteksi brute-force, dan mengirim notifikasi ke Telegram secara otomatis maupun manual.
+**SecOps Panel** adalah platform dasbor pemantauan keamanan server, manajemen kontainer, dan sistem deteksi intrusi proaktif (*Host Intrusion Detection System - HIDS*) yang dikembangkan dengan arsitektur **Python Flask** dan antarmuka **Glassmorphism Premium**.
+
+Aplikasi ini dirancang untuk memberikan visibilitas penuh secara *real-time* terhadap pemanfaatan sumber daya host, analitik jaringan, integritas berkas sistem, serta memitigasi serangan peretas otonom.
 
 ---
 
 ## ✨ Fitur Utama
 
-- 🔍 Scan file mencurigakan (.php, .sh, .exe, dll)
-- 🧹 Bersihkan file sampah di `/tmp` (berumur > 24 jam)
-- 🔐 Deteksi brute-force SSH dan blok IP-nya
-- 📬 Kirim notifikasi ke Telegram otomatis
-- 🖥️ Panel web login (port 5025) untuk:
-  - Melihat log
-  - Menjalankan scan manual dengan 1 klik
-- 🔁 Support cronjob untuk scan otomatis berkala
+### 🔬 1. Proactive HIDS & FIM (File Integrity Monitoring)
+- **SHA-256 Cryptographic Audit**: Melacak sidik jari hash fisik dari berkas krusial host secara konstan. Modifikasi sekecil apa pun tanpa izin akan memicu status **MODIFIED** berdenyut kritis.
+- **Sistem Otorisasi Sekali Klik**: Memperbarui acuan acak *baseline* kode secara praktis langsung melalui antarmuka web.
+
+### 🧱 2. Stateful Firewall & Access Ban Manager
+- **Proteksi Brute-Force Otomatis**: Mendeteksi percobaan login ilegal (gagal $\ge$ 3 kali berturut-turut) dan langsung memblokir alamat IP penyerang selama 5 menit.
+- **Blacklist Permanen**: Pencekalan alamat IP penjahat siber seumur hidup yang didukung dengan fitur pencabutan cekal instan (*Unban*).
+
+### 📊 3. Vulnerability Auditor & System Risk Score
+- **Analisis Risiko Otomatis**: Menghitung **System Risk Score (0-100)** secara riil dengan mengevaluasi pemakaian memori kritis, integritas file, dan paparan port fisik rentan (seperti FTP port 21 atau Telnet port 23).
+- **Rekomendasi Mitigasi Fisik**: Menyajikan rincian tingkat bahaya (*Severity*: `CRITICAL` / `WARNING`) serta solusi perbaikan bagi administrator.
+
+### 🐳 4. Manajemen Ekosistem Docker
+- **Pure SDK Integration**: Memantau daftar lengkap instans kontainer yang berjalan di sistem host.
+- **Kendali Jarak Jauh**: Instruksi nyata untuk melakukan **Start**, **Stop**, dan **Restart** kontainer tanpa membuka CLI eksternal.
+
+### ⚡ 5. Stateful Speedometer & Live Socket Auditor
+- **Meteran Kecepatan Real-Time**: Laju transfer *Download* dan *Upload* aktual diperbarui periodik setiap 3 detik.
+- **Inspeksi Soket Otentik**: Menautkan identitas koneksi jaringan (IP/Port) secara akurat ke nama proses aslinya (*Process Name*).
+
+### 🖥️ 6. Web Terminal Console Emulator
+- **Eksekusi Perintah Host**: Konsol interaktif bernuansa *cyber matrix* pekat untuk menjalankan perintah dasar sistem operasi (seperti `ipconfig`, `netstat -ano`, `tasklist`).
+- **Failsafe Timeout 7 Detik**: Menghentikan paksa instruksi tanpa ujung untuk menjaga kestabilan subsistem server.
+
+### 📁 7. Eksportir Laporan Forensik Sekali Klik
+- Rute otomatis `/api/report/export` merakit seluruh data metrik, jejak soket, status FIM, dan aturan Firewall aktif menjadi dokumen `.json` portabel untuk keperluan audit kepatuhan standar (*compliance*).
 
 ---
 
-## 📦 Struktur Folder
+## 🚀 Panduan Instalasi & Eksekusi
 
-```
-security_assistant_v2.2/
-├── run_scan.py              # Fungsi utama untuk scan
-├── panel.py                 # Web panel port 5025
-├── scanner.py               # Scan file mencurigakan
-├── cleaner.py               # Hapus file lama dari /tmp
-├── firewall.py              # Deteksi brute-force dan blokir
-├── notifier.py              # Kirim alert ke Telegram
-├── templates/
-│   ├── login.html           # Halaman login panel
-│   └── index.html           # Dashboard + tombol scan
-├── logs/                    # Log file (assistant.log)
-├── reports/                 # Tempat hasil scan (opsional)
-├── .env.example             # Contoh konfigurasi login & Telegram
-├── requirements.txt         # Dependency pip
-└── README.md
-```
+### Persyaratan Lingkungan
+Pastikan kamu telah memasang **Python 3.8+** pada sistem operasi host.
 
----
-
-## 🚀 Cara Instalasi
-
-1. **Clone atau download repo ini**
-2. **Install Python dan pip (Python 3.7+)**
-3. **Install dependency**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Copy konfigurasi .env**:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit dan isi:
-   ```
-   TELEGRAM_TOKEN=isi_token_bot_kamu
-   TELEGRAM_CHAT_ID=isi_chat_id_kamu
-   PANEL_USER=admin
-   PANEL_PASS=rahasia123
-   ```
-
-5. **Jalankan web panel**:
-   ```bash
-   python3 panel.py
-   ```
-   Akses di browser: `http://<ip-server>:5025`
-
----
-
-## 🔁 Cronjob Otomatis
-
-Jika ingin scan otomatis tanpa buka web:
-
+### 1. Kloning Repositori
 ```bash
-crontab -e
+git clone https://github.com/frambudi75/secops-panel.git
+cd secops-panel
 ```
 
-Tambahkan:
-
+### 2. Pemasangan Dependensi
+```bash
+pip install -r requirements.txt
 ```
-*/30 * * * * /usr/bin/python3 /path/to/run_scan.py
+
+### 3. Konfigurasi Lingkungan (`.env`)
+Buat berkas bernama `.env` pada direktori root proyekmu untuk mengatur kredensial kustom dan menyambungkan notifikasi Telegram (*opsional*):
+
+```ini
+SECRET_KEY=kunci_rahasia_sesi_flask_kamu
+PANEL_USER=admin
+PANEL_PASS=admin123
+TELEGRAM_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
+TELEGRAM_CHAT_ID=987654321
 ```
 
-> Ganti `/path/to/` dengan direktori sebenarnya
+### 4. Menjalankan Aplikasi
+```bash
+python panel.py
+```
+
+Aplikasi akan berjalan secara optimal pada alamat lokal:
+👉 **`http://localhost:5025`** atau **`http://<IP_Host>:5025`**
 
 ---
 
-## 📡 Coming Soon (v2.3)
-
-- 🤖 Telegram Bot Commands:
-  - `/scan` → Scan manual via Telegram
-  - `/log` → Kirim log ke Telegram
-  - `/status` → Status keamanan terkini
+## 🔑 Autentikasi Bawaan
+Jika berkas `.env` belum dikonfigurasi, gunakan kredensial masuk (*login*) standar berikut:
+- **Username**: `admin`
+- **Password**: `admin123`
 
 ---
 
-## 📄 Lisensi
-
-Open-source & gratis digunakan untuk keperluan pribadi atau perusahaan. Dilarang menjual ulang tanpa izin.
+## 📚 Struktur Antarmuka & Modul Utama
+- `panel.py`: Gateway pengarah rute web, REST API terpadu, dan pengawas tugas latar belakang.
+- `fim.py`: Mesin enkripsi SHA-256 pelacak integritas berkas.
+- `auditor.py`: Mesin analitik penilai risiko kerentanan host.
+- `network.py`: Pengelola kecepatan transfer data dan inventarisasi soket.
+- `services.py`: Pemantau utilisasi host dan pengendali terminasi proses (*Kill action*).
+- `terminal.py`: Jembatan eksekusi shell yang diisolasi dengan batas waktu aman.
+- `containers.py`: Jembatan komunikasi soket kernel Docker.
 
 ---
 
-## 🤝 Kontribusi
+## 🛡️ Keamanan & Peringatan Penggunaan
+> **Catatan Administrator**: Fitur **Kill Process**, **Kendali Docker**, dan **Terminal Console** memerlukan hak akses *root/administrator* pada sistem operasi agar sanggup mengeksekusi sinyal tingkat kernel secara nyata.
 
-Kritik, saran, dan pull request sangat diterima! Silakan fork atau hubungi saya langsung.
-
+---
+*Diberdayakan oleh kerangka kerja DevSecOps Modern — Rilis v2.5 Enterprise Engine.*
