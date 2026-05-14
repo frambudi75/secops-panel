@@ -27,13 +27,21 @@ def generate_ai_threat_analysis():
     fim_mods = [f["filename"] for f in fim if f["status"] == "MODIFIED"]
     fim_missing = [f["filename"] for f in fim if f["status"] == "MISSING"]
     
+    # Muat konfigurasi pengecualian celah agar analitik AI selaras dengan dashboard utama
+    try:
+        from auditor import get_ignored_findings
+        ignored = get_ignored_findings()
+    except Exception:
+        ignored = set()
+
     # Identifikasi port eksternal berisiko tinggi
     high_risk_ports = {21: "FTP", 23: "Telnet", 445: "SMB", 3389: "RDP", 3306: "Database"}
     active_risks = []
     for c in conns:
         lp = c.get("local_port")
-        if lp in high_risk_ports and high_risk_ports[lp] not in active_risks:
-            active_risks.append(high_risk_ports[lp])
+        if c.get("status", "").upper() == "LISTEN" and lp in high_risk_ports:
+            if f"VULN-PORT-{lp}" not in ignored and high_risk_ports[lp] not in active_risks:
+                active_risks.append(high_risk_ports[lp])
             
     # Sintesis Status & Wawasan
     skor_kerentanan = 0
