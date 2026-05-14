@@ -1,9 +1,34 @@
 from services import get_system_metrics
 from network import get_network_connections
 from fim import get_fim_status
+import json
+import os
+
+IGNORED_FINDINGS_PATH = "logs/ignored_findings.json"
+
+def get_ignored_findings():
+    if os.path.exists(IGNORED_FINDINGS_PATH):
+        try:
+            with open(IGNORED_FINDINGS_PATH, "r") as f:
+                return set(json.load(f))
+        except Exception:
+            pass
+    # Secara bawaan kecualikan VULN-PORT-21 karena telah dikonfirmasi tertutup oleh pengguna
+    return {"VULN-PORT-21"}
+
+def ignore_vulnerability(vuln_id):
+    ignored = get_ignored_findings()
+    ignored.add(vuln_id)
+    try:
+        with open(IGNORED_FINDINGS_PATH, "w") as f:
+            json.dump(list(ignored), f)
+        return True
+    except Exception:
+        return False
 
 def assess_system_vulnerabilities():
     """Menganalisis status sumber daya, port terbuka, dan integritas FIM untuk mengkalkulasi System Risk Score."""
+    ignored = get_ignored_findings()
     findings = []
     score_penalties = 0
     
@@ -13,7 +38,7 @@ def assess_system_vulnerabilities():
         cpu = metrics.get("cpu_percent", 0)
         ram = metrics.get("ram_percent", 0)
         
-        if cpu > 85:
+        if cpu > 85 and "VULN-RES-CPU" not in ignored:
             findings.append({
                 "id": "VULN-RES-CPU",
                 "title": "Beban CPU Mendekati Kritis",
@@ -23,7 +48,7 @@ def assess_system_vulnerabilities():
             })
             score_penalties += 10
             
-        if ram > 90:
+        if ram > 90 and "VULN-RES-RAM" not in ignored:
             findings.append({
                 "id": "VULN-RES-RAM",
                 "title": "Kapasitas Memori Menipis",
@@ -39,7 +64,7 @@ def assess_system_vulnerabilities():
     try:
         fim_list = get_fim_status()
         mod_files = [f["filename"] for f in fim_list if f["status"] == "MODIFIED"]
-        if mod_files:
+        if mod_files and "VULN-HIDS-FIM" not in ignored:
             findings.append({
                 "id": "VULN-HIDS-FIM",
                 "title": "Integritas Berkas Sistem Terkompromi",
@@ -63,7 +88,8 @@ def assess_system_vulnerabilities():
         sockets = get_network_connections()
         open_ports = set()
         for s in sockets:
-            if s.get("status", "").upper() == "LISTEN" or s.get("status", "").upper() == "NONE" and s.get("remote_address") == "None":
+            # Hanya periksa TCP LISTEN yang sesungguhnya untuk menghindari port dinamis/klien acak UDP
+            if s.get("status", "").upper() == "LISTEN":
                 laddr = s.get("local_address", "")
                 if ":" in laddr:
                     try:
@@ -73,11 +99,12 @@ def assess_system_vulnerabilities():
                         pass
                         
         for p in open_ports:
-            if p in risky_ports:
+            vuln_id = f"VULN-PORT-{p}"
+            if p in risky_ports and vuln_id not in ignored:
                 title, desc = risky_ports[p]
                 sev = "CRITICAL" if p in (21, 23) else "WARNING"
                 findings.append({
-                    "id": f"VULN-PORT-{p}",
+                    "id": vuln_id,
                     "title": title,
                     "severity": sev,
                     "description": f"Port {p} terbuka di antarmuka host. {desc}",

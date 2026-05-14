@@ -5,7 +5,7 @@ from logger import baca_konten_log, dapatkan_daftar_laporan, tulis_log_internal
 from containers import get_docker_containers, perform_container_action
 from network import get_network_connections, get_network_traffic, perform_speedtest, lookup_ip_details, get_local_ip
 from fim import get_fim_status, authorize_file_update
-from auditor import assess_system_vulnerabilities
+from auditor import assess_system_vulnerabilities, ignore_vulnerability
 from terminal import execute_system_command
 from ai_advisor import generate_ai_threat_analysis
 from access_auditor import detect_remote_sessions, get_historical_access_logs, terminate_remote_session
@@ -346,6 +346,17 @@ def api_firewall_unban():
 def api_auditor_assessment():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
     return jsonify(assess_system_vulnerabilities())
+
+@app.route("/api/auditor/ignore", methods=["POST"])
+def api_auditor_ignore():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    data = request.get_json() or {}
+    vuln_id = data.get("id")
+    if not vuln_id: return jsonify({"status": "error", "message": "ID kerentanan tidak disuplai."}), 400
+    if ignore_vulnerability(vuln_id):
+        tulis_log_internal(f"[AUDITOR] Kerentanan '{vuln_id}' resmi ditandai selesai/diabaikan oleh pengguna.")
+        return jsonify({"status": "success", "message": "Kerentanan berhasil dikecualikan dari audit!"})
+    return jsonify({"status": "error", "message": "Gagal menyimpan konfigurasi pengecualian."}), 500
 
 @app.route("/api/ai/analyze")
 def api_ai_analyze():
