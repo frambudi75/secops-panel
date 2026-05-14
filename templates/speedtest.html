@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Speedtest & Pengukuran Bandwidth - SecOps Dashboard{% endblock %}
+{% block page_title %}Speedtest & Bandwidth Tester{% endblock %}
+{% block page_subtitle %}Uji latensi Ping fisik dan kapasitas maksimal laju transfer data (Unduh & Unggah) jaringan peladen{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+
+    <!-- Wadah Kendali dan Hasil Utama -->
+    <div class="glass-card" style="text-align: center; padding: 40px 24px;">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <div class="stat-icon" style="width: 80px; height: 80px; font-size: 32px; background: rgba(0, 242, 254, 0.1); color: var(--accent-primary); margin: 0 auto 20px; border: 2px solid var(--border-glow); box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);">
+                <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            
+            <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">Penguji Kinerja Saluran Peladen</h2>
+            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 30px;">
+                Mengukur responsivitas koneksi edge cloud ke server penguji terdekat dengan metode soket murni.
+            </p>
+
+            <div id="test-controls">
+                <button class="btn-primary" onclick="startSpeedtest()" id="btn-start" style="padding: 14px 32px; font-size: 16px; font-weight: 700; border-radius: 12px; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);">
+                    <i class="fa-solid fa-play" style="margin-right: 8px;"></i> Mulai Pengujian Saluran
+                </button>
+            </div>
+
+            <div id="testing-indicator" style="display: none; margin: 20px 0;">
+                <div style="font-size: 48px; color: var(--accent-primary); margin-bottom: 16px;">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                </div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent-secondary);" id="testing-status">
+                    Membangun soket latensi fisik...
+                </div>
+                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 16px; overflow: hidden;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrik Hasil Pengujian -->
+        <div id="results-grid" style="display: none; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 40px; text-align: left;">
+            <div class="glass-card stat-card" style="background: rgba(0,0,0,0.2);">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">LATENSI PING</span>
+                <div style="font-size: 28px; font-weight: 800; color: var(--status-optimal); margin-top: 4px;">
+                    <span id="res-ping">0</span> <span style="font-size: 14px; font-weight: 600;">ms</span>
+                </div>
+                <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-wave-square"></i> Jitter: <strong id="res-jitter">0</strong> ms</span>
+            </div>
+
+            <div class="glass-card stat-card" style="background: rgba(0,0,0,0.2);">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">KECEPATAN UNDUH</span>
+                <div style="font-size: 28px; font-weight: 800; color: var(--accent-primary); margin-top: 4px;">
+                    <span id="res-down">0.00</span> <span style="font-size: 14px; font-weight: 600;">Mbps</span>
+                </div>
+                <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-arrow-down"></i> Saluran Masuk</span>
+            </div>
+
+            <div class="glass-card stat-card" style="background: rgba(0,0,0,0.2);">
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">KECEPATAN UNGGAH</span>
+                <div style="font-size: 28px; font-weight: 800; color: var(--accent-secondary); margin-top: 4px;">
+                    <span id="res-up">0.00</span> <span style="font-size: 14px; font-weight: 600;">Mbps</span>
+                </div>
+                <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-arrow-up"></i> Saluran Keluar</span>
+            </div>
+        </div>
+
+        <div id="server-location-box" style="display: none; margin: 24px auto 0; max-width: 600px; font-size: 12px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+            <i class="fa-solid fa-server" style="color: var(--accent-primary); margin-right: 6px;"></i> Titik Uji Terap: <strong id="res-loc" style="color: #e2e8f0;">-</strong> | Perekaman Waktu: <span id="res-time">-</span>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function startSpeedtest() {
+        const btnStart = document.getElementById('btn-start');
+        const indicator = document.getElementById('testing-indicator');
+        const statusText = document.getElementById('testing-status');
+        const pBar = document.getElementById('progress-bar');
+        const resultsGrid = document.getElementById('results-grid');
+        const locBox = document.getElementById('server-location-box');
+
+        // Reset UI
+        btnStart.style.display = 'none';
+        resultsGrid.style.display = 'none';
+        locBox.style.display = 'none';
+        indicator.style.display = 'block';
+        pBar.style.width = '15%';
+
+        // Tahap 1: Pengukuran latensi
+        statusText.textContent = 'Menghubungkan ke simpul DNS terdekat (Ping test)...';
+        await new Promise(r => setTimeout(r, 1000));
+        pBar.style.width = '45%';
+
+        // Tahap 2: Simulasi/Pengukuran Unduh
+        statusText.textContent = 'Menyapu kapasitas maksimal jalur unduhan (*Download Sweep*)...';
+        await new Promise(r => setTimeout(r, 1500));
+        pBar.style.width = '80%';
+
+        // Tahap 3: Mengirim permintaan ke backend untuk mendapatkan hasil kalkulasi fisik
+        statusText.textContent = 'Menghitung lalu lintas unggahan dan merangkum metrik...';
+        
+        try {
+            const res = await fetch('/api/speedtest');
+            const data = await res.json();
+            
+            pBar.style.width = '100%';
+            await new Promise(r => setTimeout(r, 400));
+
+            // Tampilkan hasil
+            document.getElementById('res-ping').textContent = data.ping_ms;
+            document.getElementById('res-jitter').textContent = data.jitter_ms;
+            
+            // Efek hitung animasi angka (Counter animation)
+            animateValue('res-down', 0, data.download_mbps, 800);
+            animateValue('res-up', 0, data.upload_mbps, 800);
+            
+            document.getElementById('res-loc').textContent = data.server_location;
+            document.getElementById('res-time').textContent = data.timestamp;
+
+            indicator.style.display = 'none';
+            resultsGrid.style.display = 'grid';
+            locBox.style.display = 'block';
+            btnStart.style.display = 'inline-flex';
+            btnStart.innerHTML = '<i class="fa-solid fa-rotate" style="margin-right: 8px;"></i> Uji Ulang Kecepatan';
+        } catch (err) {
+            alert('Gagal mengeksekusi pengujian. Periksa koneksi jaringan server.');
+            indicator.style.display = 'none';
+            btnStart.style.display = 'inline-flex';
+        }
+    }
+
+    function animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.textContent = (progress * (end - start) + start).toFixed(2);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+</script>
+{% endblock %}

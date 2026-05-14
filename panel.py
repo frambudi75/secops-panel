@@ -3,7 +3,7 @@ from main import run_scan, get_status_ringkas
 from services import get_system_metrics, get_running_services, terminate_service
 from logger import baca_konten_log, dapatkan_daftar_laporan, tulis_log_internal
 from containers import get_docker_containers, perform_container_action
-from network import get_network_connections, get_network_traffic
+from network import get_network_connections, get_network_traffic, perform_speedtest, lookup_ip_details
 from fim import get_fim_status, authorize_file_update
 from auditor import assess_system_vulnerabilities
 from terminal import execute_system_command
@@ -110,6 +110,16 @@ def ai_advisor_page():
 def access_auditor_page():
     if not session.get("logged_in"): return redirect("/")
     return render_template("access_auditor.html")
+
+@app.route("/speedtest")
+def speedtest_page():
+    if not session.get("logged_in"): return redirect("/")
+    return render_template("speedtest.html")
+
+@app.route("/ip-lookup")
+def ip_lookup_page():
+    if not session.get("logged_in"): return redirect("/")
+    return render_template("ip_lookup.html")
 
 @app.route("/console")
 def console_page():
@@ -357,6 +367,18 @@ def api_logs():
     if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
     tipe = request.args.get("type", "assistant")
     return jsonify({"content": baca_konten_log(tipe)})
+@app.route("/api/speedtest")
+def api_speedtest():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    tulis_log_internal("[SPEEDTEST] Pengujian bandwidth jaringan dan latensi ping dipicu.")
+    return jsonify(perform_speedtest())
+
+@app.route("/api/ip-lookup")
+def api_ip_lookup():
+    if not session.get("logged_in"): return jsonify({"error": "Unauthorized"}), 401
+    ip_target = request.args.get("ip", "")
+    tulis_log_internal(f"[IP-LOOKUP] Menelusuri reputasi dan geolokasi alamat IP: '{ip_target or 'Server Host'}'")
+    return jsonify(lookup_ip_details(ip_target))
 
 
 # --- DAEMON PENGAWAS SUMBER DAYA & HIDS OTOMATIS (WATCHDOG) ---

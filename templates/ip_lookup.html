@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Detail & IP Lookup - SecOps Dashboard{% endblock %}
+{% block page_title %}IP Intelligence & Lookup{% endblock %}
+{% block page_subtitle %}Penelusuran geolokasi, kepemilikan ISP, nomor Otonom (ASN), serta deteksi Anonymizer/Proxy pada alamat IP eksternal{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+
+    <!-- Wadah Input Pencarian IP -->
+    <div class="glass-card" style="padding: 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;">
+        <div style="flex-grow: 1; max-width: 500px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--accent-secondary); display: block; margin-bottom: 8px;">MASUKKAN ALAMAT IP PUBLIK</label>
+            <div class="search-box" style="width: 100%;">
+                <i class="fa-solid fa-globe" style="color: var(--text-muted);"></i>
+                <input type="text" id="ip-input" placeholder="Contoh: 8.8.8.8 atau kosongkan untuk IP Server Host..." onkeydown="if(event.key === 'Enter') performLookup()">
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: flex-end;">
+            <button class="btn-primary" onclick="performLookup()" id="btn-lookup" style="padding: 12px 24px; height: 45px;">
+                <i class="fa-solid fa-magnifying-glass" style="margin-right: 8px;"></i> Telusuri Jejak IP
+            </button>
+            <button onclick="document.getElementById('ip-input').value=''; performLookup()" class="btn-primary" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px 16px; height: 45px;" title="Periksa IP Eksternal Server Saat Ini">
+                <i class="fa-solid fa-server"></i> IP Server
+            </button>
+        </div>
+    </div>
+
+    <!-- Indikator Loading -->
+    <div id="lookup-loading" style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 32px; color: var(--accent-primary); margin-bottom: 12px;"></i>
+        <div>Mengontak penyedia IP Intelligence global...</div>
+    </div>
+
+    <!-- Peringatan Error -->
+    <div id="lookup-error" class="glass-card" style="display: none; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; text-align: center;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 8px;"></i>
+        <div id="error-message">Alamat IP tidak valid atau kueri melebihi batas.</div>
+    </div>
+
+    <!-- Wadah Hasil Penelusuran -->
+    <div id="lookup-results" style="display: none; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px;">
+        
+        <!-- Informasi Identitas & Geolokasi -->
+        <div class="glass-card" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; font-size: 120px; color: rgba(255,255,255,0.02); pointer-events: none;">
+                <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
+                <div class="stat-icon" style="background: rgba(0, 242, 254, 0.1); color: var(--accent-primary);">
+                    <i class="fa-solid fa-fingerprint"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--accent-primary);" id="res-ip">0.0.0.0</h3>
+                    <p style="font-size: 12px; color: var(--text-muted);">Alamat IP Sasaran Analisis</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr; gap: 16px; font-size: 13px;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Negara / Kode:</span>
+                    <strong id="res-country" style="color: #e2e8f0;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Wilayah / Kota:</span>
+                    <strong id="res-region" style="color: #e2e8f0;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Penyedia Layanan (ISP):</span>
+                    <strong id="res-isp" style="color: #e2e8f0;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Organisasi / Kepemilikan:</span>
+                    <strong id="res-org" style="color: #e2e8f0;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Nomor Otonom (ASN):</span>
+                    <strong id="res-asn" style="font-family: 'JetBrains Mono', monospace; color: var(--accent-secondary);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px;">
+                    <span style="color: var(--text-muted);">Zona Waktu:</span>
+                    <strong id="res-tz" style="color: #e2e8f0;">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Koordinat Peta:</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);"><span id="res-lat">-</span>, <span id="res-lon">-</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reputasi & Intelijen Keamanan -->
+        <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px;">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--status-warning);" id="threat-icon-box">
+                        <i class="fa-solid fa-shield-virus"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 700;">Reputasi & Skor Ancaman</h3>
+                        <p style="font-size: 12px; color: var(--text-muted);">Deteksi Anonymizer dan karakteristik sentral data</p>
+                    </div>
+                </div>
+
+                <!-- Lencana Indikator Tingkat Risiko -->
+                <div style="text-align: center; margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03);">
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">TINGKAT RISIKO KEAMANAN</div>
+                    <div id="threat-badge" style="font-size: 18px; font-weight: 800; padding: 6px 16px; border-radius: 8px; display: inline-block;">
+                        -
+                    </div>
+                </div>
+
+                <!-- Deretan Temuan Faktor Risiko -->
+                <div style="font-size: 13px;">
+                    <div style="margin-bottom: 10px; color: var(--text-muted); font-weight: 600;">Temuan Atribut Jaringan:</div>
+                    <div id="reasons-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Alasan akan disuntikkan oleh JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; font-size: 12px; color: var(--text-muted); background: rgba(16, 185, 129, 0.05); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--status-optimal);">
+                <i class="fa-solid fa-circle-check" style="color: var(--status-optimal); margin-right: 6px;"></i> IP divalidasi utuh melalui mesin deteksi proaktif.
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function performLookup() {
+        const ipInput = document.getElementById('ip-input').value.trim();
+        const loadingBox = document.getElementById('lookup-loading');
+        const errorBox = document.getElementById('lookup-error');
+        const resultsBox = document.getElementById('lookup-results');
+
+        // Ganti status UI
+        loadingBox.style.display = 'block';
+        errorBox.style.display = 'none';
+        resultsBox.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/ip-lookup?ip=${encodeURIComponent(ipInput)}`);
+            const data = await res.json();
+
+            loadingBox.style.display = 'none';
+
+            if (data.status === 'success') {
+                // Isi field identitas
+                document.getElementById('res-ip').textContent = data.ip;
+                document.getElementById('res-country').textContent = data.country || 'N/A';
+                document.getElementById('res-region').textContent = data.region || 'N/A';
+                document.getElementById('res-isp').textContent = data.isp || 'N/A';
+                document.getElementById('res-org').textContent = data.org || 'N/A';
+                document.getElementById('res-asn').textContent = data.asn || 'N/A';
+                document.getElementById('res-tz').textContent = data.timezone || 'N/A';
+                document.getElementById('res-lat').textContent = data.latitude || '-';
+                document.getElementById('res-lon').textContent = data.longitude || '-';
+
+                // Format gaya lencana ancaman
+                const badge = document.getElementById('threat-badge');
+                const iconBox = document.getElementById('threat-icon-box');
+                badge.textContent = `${data.threat_level} (Skor: ${data.threat_score})`;
+
+                if (data.threat_score === 0) {
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badge.style.color = 'var(--status-optimal)';
+                    badge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                    iconBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                    iconBox.style.color = 'var(--status-optimal)';
+                } else if (data.threat_score < 50) {
+                    badge.style.background = 'rgba(245, 158, 11, 0.2)';
+                    badge.style.color = 'var(--status-warning)';
+                    badge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+                    iconBox.style.background = 'rgba(245, 158, 11, 0.1)';
+                    iconBox.style.color = 'var(--status-warning)';
+                } else {
+                    badge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    badge.style.color = 'var(--status-danger)';
+                    badge.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                    iconBox.style.background = 'rgba(239, 68, 68, 0.1)';
+                    iconBox.style.color = 'var(--status-danger)';
+                }
+
+                // Render deretan alasan
+                const reasonsContainer = document.getElementById('reasons-container');
+                if (!data.reasons || data.reasons.length === 0) {
+                    reasonsContainer.innerHTML = `<div style="color: var(--status-optimal);"><i class="fa-solid fa-check" style="margin-right: 6px;"></i> IP bebas dari tanda-tanda penggunaan Proxy, VPN, atau Tor exit node.</div>`;
+                } else {
+                    reasonsContainer.innerHTML = data.reasons.map(r => `
+                        <div style="background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border-left: 2px solid var(--status-danger); color: #fca5a5;">
+                            <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> ${r}
+                        </div>
+                    `).join('');
+                }
+
+                resultsBox.style.display = 'grid';
+            } else {
+                document.getElementById('error-message').textContent = data.message || 'Alamat IP tidak ditemukan.';
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            loadingBox.style.display = 'none';
+            document.getElementById('error-message').textContent = 'Koneksi terputus ke peladen intelijen IP.';
+            errorBox.style.display = 'block';
+        }
+    }
+
+    // Penelusuran otomatis untuk IP Server saat halaman dimuat
+    window.addEventListener('DOMContentLoaded', () => {
+        performLookup();
+    });
+</script>
+{% endblock %}

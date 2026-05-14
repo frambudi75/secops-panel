@@ -41,6 +41,14 @@
                     <i class="fa-solid fa-network-wired"></i>
                     <span>Network Security</span>
                 </a>
+                <a href="/speedtest" class="nav-item {% if request.path == '/speedtest' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Speedtest Jaringan</span>
+                </a>
+                <a href="/ip-lookup" class="nav-item {% if request.path == '/ip-lookup' %}active{% endif %}">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span>Detail & IP Lookup</span>
+                </a>
                 <a href="/security" class="nav-item {% if request.path == '/security' %}active{% endif %}">
                     <i class="fa-solid fa-fingerprint"></i>
                     <span>Proactive HIDS</span>
