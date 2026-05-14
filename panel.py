@@ -3,7 +3,7 @@ from main import run_scan, get_status_ringkas
 from services import get_system_metrics, get_running_services, terminate_service
 from logger import baca_konten_log, dapatkan_daftar_laporan, tulis_log_internal
 from containers import get_docker_containers, perform_container_action
-from network import get_network_connections, get_network_traffic, perform_speedtest, lookup_ip_details
+from network import get_network_connections, get_network_traffic, perform_speedtest, lookup_ip_details, get_local_ip
 from fim import get_fim_status, authorize_file_update
 from auditor import assess_system_vulnerabilities
 from terminal import execute_system_command
@@ -34,8 +34,11 @@ os.makedirs("reports", exist_ok=True)
 tulis_log_internal("[SISTEM] Subsistem Remote Access Auditor Berjalan Penuh.")
 
 @app.context_processor
-def inject_os_name():
-    return dict(os_name=platform.system() or "Linux")
+def inject_global_context():
+    return dict(
+        os_name=platform.system() or "Linux",
+        local_ip=get_local_ip()
+    )
 
 @app.route("/", methods=["GET", "POST"])
 def login():

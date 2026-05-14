@@ -9,6 +9,20 @@ import random
 _last_net_io = None
 _last_net_time = 0
 
+def get_local_ip():
+    """Mendapatkan alamat IP lokal (intranet/privat) dari host saat ini."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+
 def get_network_connections():
     """Mengekstraksi koneksi TCP/UDP host, port terbuka, dan nama proses terkait secara real-time."""
     hasil = []
@@ -32,6 +46,7 @@ def get_network_connections():
             hasil.append({
                 "protocol": proto,
                 "local_address": laddr,
+                "local_port": conn.laddr.port if conn.laddr else 0,
                 "remote_address": raddr,
                 "status": status,
                 "pid": conn.pid or "N/A",
@@ -126,6 +141,28 @@ def perform_speedtest():
 def lookup_ip_details(ip_address=""):
     """Mengambil informasi detail geolokasi, ISP, dan skor ancaman dari alamat IP publik."""
     ip_str = ip_address.strip() if ip_address else ""
+    
+    # Deteksi cepat untuk rentang IP privat/lokal (RFC 1918 & Loopback)
+    privat_prefixes = ("127.", "192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")
+    if ip_str and any(ip_str.startswith(p) for p in privat_prefixes):
+        return {
+            "status": "success",
+            "ip": ip_str,
+            "country": "Indonesia (ID) - Jaringan Lokal",
+            "region": "Intranet Internal / Privat",
+            "timezone": "Asia/Jakarta",
+            "isp": "Local Area Network (LAN)",
+            "org": "SecOps Intranet Subsystem",
+            "asn": "AS-PRIVATE-LAN",
+            "latitude": -6.2088,
+            "longitude": 106.8456,
+            "is_proxy": False,
+            "is_hosting": False,
+            "threat_score": 0,
+            "threat_level": "Aman (Lokal / Privat)",
+            "reasons": ["Alamat IP berada dalam blok ruang jaringan privat (RFC 1918 / Loopback)."]
+        }
+
     target_url = f"http://ip-api.com/json/{ip_str}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query,proxy,hosting"
     
     try:

@@ -17,12 +17,15 @@
             </div>
         </div>
         
-        <div style="display: flex; gap: 12px; align-items: flex-end;">
+        <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
             <button class="btn-primary" onclick="performLookup()" id="btn-lookup" style="padding: 12px 24px; height: 45px;">
                 <i class="fa-solid fa-magnifying-glass" style="margin-right: 8px;"></i> Telusuri Jejak IP
             </button>
+            <button onclick="document.getElementById('ip-input').value='{{ local_ip }}'; performLookup()" class="btn-primary" style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); color: var(--accent-primary); padding: 12px 16px; height: 45px;" title="Periksa IP Lokal/Privat Host Saat Ini">
+                <i class="fa-solid fa-network-wired"></i> IP Lokal
+            </button>
             <button onclick="document.getElementById('ip-input').value=''; performLookup()" class="btn-primary" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px 16px; height: 45px;" title="Periksa IP Eksternal Server Saat Ini">
-                <i class="fa-solid fa-server"></i> IP Server
+                <i class="fa-solid fa-globe"></i> IP Eksternal
             </button>
         </div>
     </div>

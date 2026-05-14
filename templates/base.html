@@ -90,7 +90,12 @@
                     <p>{% block page_subtitle %}Pusat kendali dan pemantauan aktivitas keamanan server{% endblock %}</p>
                 </div>
                 
-                <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <div class="platform-badge" style="border-color: rgba(0, 242, 254, 0.2); background: rgba(0, 242, 254, 0.03);" title="Alamat IP Privat/Lokal Host">
+                        <i class="fa-solid fa-network-wired" style="color: var(--accent-secondary);"></i>
+                        <span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-main);">{{ local_ip }}</span>
+                    </div>
+
                     <div class="platform-badge">
                         <span class="platform-indicator"></span>
                         <span id="platform-text"><i class="fa-solid fa-microchip"></i> Engine Active</span>
