@@ -33,12 +33,13 @@
                         <th>Host / IP Remote</th>
                         <th>Status Sesi</th>
                         <th>Nama Proses Kernel</th>
+                        <th>Riwayat Ketikan Perintah</th>
                         <th>Berkas Termodifikasi (*Tampering*)</th>
                         <th>Aksi Keamanan</th>
                     </tr>
                 </thead>
                 <tbody id="active-sessions-tbody">
-                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menyapu soket kendali jarak jauh...</td></tr>
+                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menyapu soket kendali jarak jauh...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -83,7 +84,7 @@
                 
                 // Render sesi aktif
                 if (data.active_sessions.length === 0) {
-                    sessionsTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak terdeteksi adanya koneksi remote eksternal (SSH/WinSCP/RDP) saat ini.</td></tr>`;
+                    sessionsTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Tidak terdeteksi adanya koneksi remote eksternal (SSH/WinSCP/RDP) saat ini.</td></tr>`;
                 } else {
                     sessionsTbody.innerHTML = data.active_sessions.map(s => {
                         const isSsh = s.protocol.includes('SSH');
@@ -98,12 +99,21 @@
                             modsHtml = s.correlated_tampering.map(f => `<span style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger); padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 4px; border: 1px solid rgba(239, 68, 68, 0.4); display: inline-block;">${f}</span>`).join('');
                         }
 
+                        // Susun daftar riwayat ketikan
+                        let histHtml = `<span style="color: var(--text-muted); font-size: 11px;">Tidak ada rekaman</span>`;
+                        if (s.typed_history && s.typed_history.length > 0) {
+                            histHtml = `<div style="max-height: 85px; overflow-y: auto; background: rgba(0, 0, 0, 0.35); padding: 6px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #38bdf8; line-height: 1.4; text-align: left; border: 1px solid rgba(56, 189, 248, 0.2);">` +
+                                s.typed_history.map(c => `<div style="white-space: nowrap;">${c}</div>`).join('') +
+                                `</div>`;
+                        }
+
                         return `
                             <tr>
                                 <td><span style="padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; ${protoBadge}">${s.protocol}</span></td>
                                 <td style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: ${s.remote_ip !== 'N/A' ? 'var(--status-danger)' : 'var(--text-main)'};">${s.remote_ip}:${s.remote_port}</td>
                                 <td>${statusPill}</td>
                                 <td style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${s.process_name} <span style="color: var(--text-muted); font-size: 11px;">(PID: ${s.pid})</span></td>
+                                <td style="max-width: 280px;">${histHtml}</td>
                                 <td>${modsHtml}</td>
                                 <td>
                                     ${s.pid !== 'N/A' ? `
@@ -129,7 +139,7 @@
                 }
             }
         } catch (err) {
-            sessionsTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--status-danger);">Gagal membaca soket kendali jarak jauh.</td></tr>`;
+            sessionsTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--status-danger);">Gagal membaca soket kendali jarak jauh.</td></tr>`;
         }
     }
 
