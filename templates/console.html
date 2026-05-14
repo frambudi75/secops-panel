@@ -2,7 +2,7 @@
 
 {% block title %}Web Terminal Console - SecOps Dashboard{% endblock %}
 {% block page_title %}Command Shell Console{% endblock %}
-{% block page_subtitle %}Eksekutor instruksi OS Windows jarak jauh dengan batasan waktu aman (timeout 7 detik){% endblock %}
+{% block page_subtitle %}Eksekutor instruksi OS {{ os_name }} jarak jauh dengan batasan waktu aman (timeout 7 detik){% endblock %}
 
 {% block content %}
 <div class="glass-card" style="padding: 0; overflow: hidden; border-radius: 16px;">
@@ -26,14 +26,18 @@
             ========================================================================<br>
             &nbsp;&nbsp;&nbsp;&nbsp;SECOPS WEB TERMINAL SUBSYSTEM - HOST OS ACCESS GRANTED<br>
             ========================================================================<br>
+            {% if os_name == 'Windows' %}
             Ketikkan perintah pemeriksaan dasar Windows (seperti: <span style="color: #38bdf8;">ipconfig</span>, <span style="color: #38bdf8;">netstat -ano</span>, atau <span style="color: #38bdf8;">tasklist</span>).<br>
+            {% else %}
+            Ketikkan perintah pemeriksaan dasar Linux (seperti: <span style="color: #38bdf8;">ifconfig</span>, <span style="color: #38bdf8;">netstat -tulpn</span>, atau <span style="color: #38bdf8;">ps aux</span>).<br>
+            {% endif %}
             Instruksi yang meminta interaksi tiada henti akan diterminasi dalam 7 detik.
         </div>
     </div>
 
     <!-- Wadah Prompt & Input Perintah -->
     <div style="background: #0f172a; padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; gap: 10px;">
-        <span style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; white-space: nowrap;">secops@windows:~$</span>
+        <span style="color: #10b981; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; white-space: nowrap;">secops@{{ os_name|lower }}:~$</span>
         
         <input type="text" id="cmd-input" placeholder="Ketik perintah dan tekan Enter..." style="background: transparent; border: none; color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; flex-grow: 1; width: 100%;">
         
@@ -63,7 +67,7 @@
             if (!cmdStr) return;
 
             // Cetak perintah masukan ke layar
-            appendOutput(`secops@windows:~$ ${cmdStr}`, 'input');
+            appendOutput(`secops@{{ os_name|lower }}:~$ ${cmdStr}`, 'input');
             inputField.value = '';
             inputField.disabled = true;
             loadingInd.style.display = 'inline-block';

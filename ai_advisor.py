@@ -1,4 +1,5 @@
 import random
+import platform
 from services import get_system_metrics
 from network import get_network_connections
 from fim import get_fim_status
@@ -77,6 +78,10 @@ def generate_ai_threat_analysis():
     else:
         insights.append("Sidik jari SHA-256 seluruh berkas inti tervalidasi utuh dan konsisten terhadap acuan baseline. Tidak ditemukan indikasi penyusupan kode.")
         
+    # Deteksi OS untuk teks dinamis
+    os_name = platform.system() or "Host"
+    firewall_name = "Windows Firewall" if os_name == "Windows" else "Firewall (UFW/iptables)"
+    
     # Logika Jaringan / Port
     if active_risks:
         skor_kerentanan += 25
@@ -87,7 +92,7 @@ def generate_ai_threat_analysis():
             "probability": "75%",
             "impact": "HIGH",
             "trigger": f"Layanan {str_ports} terbuka di antarmuka publik",
-            "mitigation": "Tutup port terkait jika tidak digunakan melalui aturan Windows Firewall, atau terapkan jalur tunneling terenkripsi (VPN/SSH)."
+            "mitigation": f"Tutup port terkait jika tidak digunakan melalui aturan {firewall_name}, atau terapkan jalur tunneling terenkripsi (VPN/SSH)."
         })
     else:
         insights.append("Perisai soket jaringan host terlindungi rapat. Tidak terdeteksi pembukaan port usang rentan di antarmuka publik.")
@@ -105,7 +110,7 @@ def generate_ai_threat_analysis():
             "probability": "12%",
             "impact": "LOW",
             "trigger": "Ketergantungan pustaka pihak ketiga berjangka panjang tanpa patching",
-            "mitigation": "Lakukan pemindaian keamanan berkala melalui menu Overview dan pastikan OS Windows menerima pembaruan keamanan rutin."
+            "mitigation": f"Lakukan pemindaian keamanan berkala melalui menu Overview dan pastikan OS {os_name} menerima pembaruan keamanan rutin."
         })
         
     # Kalkulasi Status dan Confidence

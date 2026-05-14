@@ -11,6 +11,7 @@ from ai_advisor import generate_ai_threat_analysis
 from access_auditor import detect_remote_sessions, get_historical_access_logs, terminate_remote_session
 import os
 import time
+import platform
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import asyncio
@@ -31,6 +32,10 @@ PERMANENT_BANS = {}
 os.makedirs("logs", exist_ok=True)
 os.makedirs("reports", exist_ok=True)
 tulis_log_internal("[SISTEM] Subsistem Remote Access Auditor Berjalan Penuh.")
+
+@app.context_processor
+def inject_os_name():
+    return dict(os_name=platform.system() or "Linux")
 
 @app.route("/", methods=["GET", "POST"])
 def login():

@@ -1,5 +1,6 @@
 import os
 import datetime
+import platform
 
 LOG_PATHS = {
     "syslog": "/var/log/syslog",
@@ -29,10 +30,11 @@ def baca_konten_log(tipe_log, max_lines=150):
                 f.write(f"[{now}] [SISTEM] Daemon asisten keamanan dan pemantauan aktif.\n")
             return f"[{now}] [SISTEM] Daemon asisten keamanan dan pemantauan aktif.\n"
             
-        # Fallback dummy cerdas untuk syslog/auth di Windows
+        # Fallback dummy cerdas jika file fisik log tidak dapat diakses
+        os_name = platform.system() or "Host"
         return (
             f"=== BUKTI LOG SIMULASI: {path} (Mode Pengujian Lokal) ===\n"
-            f"[!] Catatan: Sistem file fisik tidak terdeteksi pada OS Windows. Menampilkan simulasi data real-time:\n\n"
+            f"[!] Catatan: Sistem file fisik log tidak terdeteksi atau diakses pada OS {os_name}. Menampilkan simulasi data real-time:\n\n"
             "[08:00:12] dockerd[1042]: Loading containers: security-monitor, redis-cache, app-backend...\n"
             "[08:01:05] kernel: [  22.104] audit: type=1400 audit(1700000000.000:1): apparmor=\"STATUS\" operation=\"profile_load\"\n"
             "[08:15:30] sshd[2050]: Accepted publickey for admin from 192.168.1.50 port 54322 ssh2\n"
