@@ -12,6 +12,7 @@ from access_auditor import detect_remote_sessions, get_historical_access_logs, t
 import os
 import time
 import platform
+import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import asyncio
@@ -31,6 +32,38 @@ PERMANENT_BANS = {}
 
 os.makedirs("logs", exist_ok=True)
 os.makedirs("reports", exist_ok=True)
+
+FIREWALL_DB_PATH = "logs/firewall_rules.json"
+
+def simpan_aturan_firewall():
+    try:
+        data = {
+            "blocked_ip": {ip: dt.isoformat() for ip, dt in BLOCKED_IP.items() if isinstance(dt, datetime)},
+            "permanent_bans": PERMANENT_BANS
+        }
+        with open(FIREWALL_DB_PATH, "w") as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        tulis_log_internal(f"[ERROR] Gagal menyimpan basis data firewall: {e}")
+
+def muat_aturan_firewall():
+    global BLOCKED_IP, PERMANENT_BANS
+    if os.path.exists(FIREWALL_DB_PATH):
+        try:
+            with open(FIREWALL_DB_PATH, "r") as f:
+                data = json.load(f)
+                b_ips = data.get("blocked_ip", {})
+                for ip, dt_str in b_ips.items():
+                    try:
+                        BLOCKED_IP[ip] = datetime.fromisoformat(dt_str)
+                    except Exception:
+                        pass
+                PERMANENT_BANS.update(data.get("permanent_bans", {}))
+            tulis_log_internal("[SISTEM] Basis data persisten aturan Firewall berhasil dimuat.")
+        except Exception as e:
+            tulis_log_internal(f"[ERROR] Gagal memuat basis data firewall: {e}")
+
+muat_aturan_firewall()
 tulis_log_internal("[SISTEM] Subsistem Remote Access Auditor Berjalan Penuh.")
 
 @app.context_processor
@@ -69,6 +102,7 @@ def login():
             if LOGIN_ATTEMPT[ip] >= 3:
                 BLOCKED_IP[ip] = datetime.now().replace(microsecond=0) + timedelta(minutes=5)
                 tulis_log_internal(f"[FIREWALL] IP {ip} diblokir selama 5 menit akibat brute-force.")
+                simpan_aturan_firewall()
             return render_template("login.html", error="Kredensial tidak tepat!")
             
     return render_template("login.html")
@@ -283,6 +317,7 @@ def api_firewall_ban():
     if not ip: return jsonify({"status": "error", "message": "Alamat IP wajib diisi."}), 400
     PERMANENT_BANS[ip] = alasan
     tulis_log_internal(f"[FIREWALL] IP '{ip}' resmi didaftarkan ke Blacklist Permanen. Alasan: {alasan}")
+    simpan_aturan_firewall()
     return jsonify({"status": "success", "message": f"IP {ip} berhasil diblokir permanen."})
 
 @app.route("/api/security/firewall/unban", methods=["POST"])
@@ -302,6 +337,7 @@ def api_firewall_unban():
         
     if dihapus:
         tulis_log_internal(f"[FIREWALL] Akses blokir untuk IP '{ip}' resmi DICABUT.")
+        simpan_aturan_firewall()
         return jsonify({"status": "success", "message": f"Blokir IP {ip} berhasil dicabut."})
     return jsonify({"status": "error", "message": f"IP {ip} tidak terdaftar dalam pemblokiran."})
 

@@ -126,6 +126,11 @@
                         </tr>
                     `;
                 }).join('');
+                
+                const modItem = data.find(i => i.status === 'MODIFIED');
+                if (modItem && typeof triggerIntrusionAlarm === 'function') {
+                    triggerIntrusionAlarm(`INTRUSI FIM: MODIFIKASI ILEGAL`, `Berkas sistem terdeteksi berubah tanpa otorisasi hash: ${modItem.filename}`);
+                }
             }
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--status-danger);">Gagal membaca status integritas file sistem.</td></tr>`;

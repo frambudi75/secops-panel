@@ -177,6 +177,11 @@
                             </div>
                         `;
                     }).join('');
+                    
+                    const critFinding = data.findings.find(f => f.severity === 'CRITICAL');
+                    if (critFinding && typeof triggerIntrusionAlarm === 'function') {
+                        triggerIntrusionAlarm(`PERINGATAN KRITIS: ${critFinding.title}`, critFinding.description);
+                    }
                 }
             }
         } catch (e) {
